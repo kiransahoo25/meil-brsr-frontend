@@ -1,0 +1,245 @@
+export const BRSR_PRINCIPLES = [
+  {
+    id: "P1",
+    name: "Business Ethics",
+    sdgs: [16],
+    color: "#10B981",
+    indicators: [
+      {
+        key: "ethicsTraining",
+        label: "Employees trained in anti-corruption",
+        unit: "%",
+        max: 100,
+      },
+      {
+        key: "antiCorruptionCases",
+        label: "Corruption cases reported",
+        unit: "count",
+        max: 20,
+      },
+      {
+        key: "policyCoverage",
+        label: "Code of conduct coverage",
+        unit: "%",
+        max: 100,
+      },
+    ],
+  },
+  {
+    id: "P2",
+    name: "Sustainable Goods",
+    sdgs: [12],
+    color: "#0EA5E9",
+    indicators: [
+      {
+        key: "recycledInput",
+        label: "Recycled input material",
+        unit: "%",
+        max: 100,
+      },
+      {
+        key: "productSafetyIncidents",
+        label: "Product safety incidents",
+        unit: "count",
+        max: 20,
+      },
+      {
+        key: "lifecycleAssessments",
+        label: "Life-cycle assessments",
+        unit: "count",
+        max: 30,
+      },
+    ],
+  },
+  {
+    id: "P3",
+    name: "Employee Well-being",
+    sdgs: [3, 8],
+    color: "#8B5CF6",
+    indicators: [
+      { key: "ltifr", label: "LTIFR (per 1M hrs)", unit: "/1M", max: 2 },
+      {
+        key: "trainingHours",
+        label: "Avg training hrs/employee",
+        unit: "hrs",
+        max: 80,
+      },
+      {
+        key: "womenWorkforce",
+        label: "Women in workforce",
+        unit: "%",
+        max: 100,
+      },
+      {
+        key: "safetyIncidents",
+        label: "Recordable incidents",
+        unit: "count",
+        max: 100,
+      },
+    ],
+  },
+  {
+    id: "P4",
+    name: "Stakeholder Engagement",
+    sdgs: [17],
+    color: "#F59E0B",
+    indicators: [
+      {
+        key: "grievancesReceived",
+        label: "Grievances received",
+        unit: "count",
+        max: 500,
+      },
+      {
+        key: "grievancesResolved",
+        label: "Grievances resolved",
+        unit: "count",
+        max: 500,
+      },
+      {
+        key: "communityMeetings",
+        label: "Community meetings",
+        unit: "count",
+        max: 100,
+      },
+    ],
+  },
+  {
+    id: "P5",
+    name: "Human Rights",
+    sdgs: [5, 8, 10],
+    color: "#EF4444",
+    indicators: [
+      {
+        key: "hrTraining",
+        label: "Trained on human rights",
+        unit: "%",
+        max: 100,
+      },
+      {
+        key: "hrComplaints",
+        label: "Human rights complaints",
+        unit: "count",
+        max: 20,
+      },
+      { key: "minimumWage", label: "Paid minimum wage", unit: "%", max: 100 },
+    ],
+  },
+  {
+    id: "P6",
+    name: "Environment",
+    sdgs: [6, 7, 12, 13, 14, 15],
+    color: "#10B981",
+    indicators: [
+      {
+        key: "scope1",
+        label: "Scope 1 GHG emissions",
+        unit: "tCO₂e",
+        max: 500000,
+      },
+      {
+        key: "scope2",
+        label: "Scope 2 GHG emissions",
+        unit: "tCO₂e",
+        max: 200000,
+      },
+      {
+        key: "energyConsumption",
+        label: "Energy consumption",
+        unit: "GJ (000)",
+        max: 10000,
+      },
+      {
+        key: "waterWithdrawal",
+        label: "Water withdrawal",
+        unit: "ML",
+        max: 50,
+      },
+      { key: "wasteRecycled", label: "Waste recycled", unit: "%", max: 100 },
+    ],
+  },
+  {
+    id: "P7",
+    name: "Policy Advocacy",
+    sdgs: [16, 17],
+    color: "#DC2626",
+    indicators: [
+      {
+        key: "policyPositions",
+        label: "Policy positions taken",
+        unit: "count",
+        max: 20,
+      },
+      {
+        key: "tradeAssociations",
+        label: "Trade associations",
+        unit: "count",
+        max: 30,
+      },
+    ],
+  },
+  {
+    id: "P8",
+    name: "Inclusive Growth",
+    sdgs: [1, 8, 10, 11],
+    color: "#6366F1",
+    indicators: [
+      { key: "csrSpend", label: "CSR spend", unit: "₹ Cr", max: 500 },
+      {
+        key: "localEmployment",
+        label: "Local employment",
+        unit: "%",
+        max: 100,
+      },
+      {
+        key: "scstEmployment",
+        label: "SC/ST/OBC employment",
+        unit: "%",
+        max: 100,
+      },
+    ],
+  },
+  {
+    id: "P9",
+    name: "Consumer Value",
+    sdgs: [3, 12],
+    color: "#22C55E",
+    indicators: [
+      {
+        key: "productSafety",
+        label: "Meets safety standards",
+        unit: "%",
+        max: 100,
+      },
+      {
+        key: "customerComplaints",
+        label: "Complaints received",
+        unit: "count",
+        max: 500,
+      },
+      {
+        key: "complaintsResolved",
+        label: "Complaints resolved",
+        unit: "%",
+        max: 100,
+      },
+    ],
+  },
+];
+
+export const SDG_DEFINITIONS = [
+  { id: 1, name: "No Poverty", color: "#e5243b" },
+  { id: 3, name: "Good Health & Well-being", color: "#4c9f38" },
+  { id: 5, name: "Gender Equality", color: "#ff3a21" },
+  { id: 6, name: "Clean Water & Sanitation", color: "#26bde2" },
+  { id: 7, name: "Affordable & Clean Energy", color: "#fcc30b" },
+  { id: 8, name: "Decent Work & Growth", color: "#a21942" },
+  { id: 10, name: "Reduced Inequalities", color: "#dd1367" },
+  { id: 11, name: "Sustainable Cities", color: "#fd9d24" },
+  { id: 12, name: "Responsible Consumption", color: "#bf8b2e" },
+  { id: 13, name: "Climate Action", color: "#3f7e44" },
+  { id: 14, name: "Life Below Water", color: "#0a97d9" },
+  { id: 15, name: "Life on Land", color: "#56c02b" },
+  { id: 16, name: "Peace & Justice", color: "#00689d" },
+  { id: 17, name: "Partnerships", color: "#19486a" },
+];
