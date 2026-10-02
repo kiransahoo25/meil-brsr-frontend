@@ -68,9 +68,11 @@ export default function ESGReport() {
     setDownloading(true);
     try {
       const token = localStorage.getItem("token");
+      const apiBase =
+        import.meta.env.VITE_API_URL || "http://localhost:8000/api";
       const url = selectedUnit
-        ? `http://localhost:8000/api/reports/brsr-pdf?entity_slug=${selectedUnit}`
-        : "http://localhost:8000/api/reports/brsr-pdf";
+        ? `${apiBase}/reports/brsr-pdf?entity_slug=${selectedUnit}`
+        : `${apiBase}/reports/brsr-pdf`;
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
