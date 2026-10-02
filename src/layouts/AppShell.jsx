@@ -1,42 +1,73 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
-const NAV_GROUPS = [
+const ROLE_NAV = {
+  "data-entry": ["/", "/collection"],
+  approver: ["/", "/approvals"],
+  "unit-admin": ["/", "/approvals", "/esg-report", "/sdg-report"],
+  "esg-officer": [
+    "/",
+    "/approvals",
+    "/esg-report",
+    "/sdg-report",
+    "/consolidated",
+    "/validation",
+    "/audit",
+  ],
+  "group-admin": [
+    "/",
+    "/approvals",
+    "/esg-report",
+    "/sdg-report",
+    "/consolidated",
+    "/validation",
+    "/audit",
+  ],
+};
+
+const ALL_NAV = [
   {
-    group: 'Reporting',
+    group: "Reporting",
     items: [
-      { to: '/', label: 'Dashboard', icon: '📊' },
-      { to: '/collection', label: 'BRSR Data Collection', icon: '📝' },
-      { to: '/approvals', label: 'Approvals', icon: '🖊️' },
-      { to: '/esg-report', label: 'ESG Report', icon: '🌱' },
-      { to: '/sdg-report', label: 'SDG Report', icon: '🎯' },
+      { to: "/", label: "Dashboard", icon: "📊" },
+      { to: "/collection", label: "BRSR Data Collection", icon: "📝" },
+      { to: "/approvals", label: "Approvals", icon: "🖊️" },
+      { to: "/esg-report", label: "ESG Report", icon: "🌱" },
+      { to: "/sdg-report", label: "SDG Report", icon: "🎯" },
+      { to: "/consolidated", label: "Consolidated View", icon: "🗂️" },
     ],
   },
   {
-    group: 'Controls',
+    group: "Controls",
     items: [
-      { to: '/validation', label: 'Validation Center', icon: '✅' },
-      { to: '/audit', label: 'Audit Trail', icon: '🕘' },
+      { to: "/validation", label: "Validation Center", icon: "✅" },
+      { to: "/audit", label: "Audit Trail", icon: "🕘" },
     ],
   },
-]
+];
 
 const ROLE_LABELS = {
-  'data-entry': 'Data Entry Operator',
-  approver: 'Entity Approver',
-  'unit-admin': 'Unit Admin',
-  'esg-officer': 'ESG Officer',
-  'group-admin': 'Group Admin',
-}
+  "data-entry": "Data Entry Operator",
+  approver: "Entity Approver",
+  "unit-admin": "Unit Admin",
+  "esg-officer": "ESG Officer",
+  "group-admin": "Group Admin",
+};
 
 export default function AppShell() {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   function handleLogout() {
-    logout()
-    navigate('/login')
+    logout();
+    navigate("/login");
   }
+
+  const allowedPaths = ROLE_NAV[user?.role] || [];
+  const visibleGroups = ALL_NAV.map((g) => ({
+    ...g,
+    items: g.items.filter((it) => allowedPaths.includes(it.to)),
+  })).filter((g) => g.items.length > 0);
 
   return (
     <div className="min-h-screen flex bg-slate-100">
@@ -46,7 +77,9 @@ export default function AppShell() {
             M
           </div>
           <div>
-            <h1 className="text-xs font-bold text-white leading-tight">MEIL BRSR Portal</h1>
+            <h1 className="text-xs font-bold text-white leading-tight">
+              MEIL BRSR Portal
+            </h1>
             <span className="text-[10px] text-slate-500 uppercase tracking-wide">
               ESG · SDG Suite
             </span>
@@ -58,15 +91,17 @@ export default function AppShell() {
             {user?.initials}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-xs font-bold text-white truncate">{user?.name}</div>
-            <div className="text-[10px] text-sky-300 font-bold">
+            <div className="text-xs font-bold text-white truncate">
+              {user?.name}
+            </div>
+            <div className="text-[10px] text-sky-300 font-bold truncate">
               {ROLE_LABELS[user?.role] || user?.role}
             </div>
           </div>
         </div>
 
         <nav className="p-3 flex-1">
-          {NAV_GROUPS.map((g) => (
+          {visibleGroups.map((g) => (
             <div key={g.group}>
               <div className="text-[10px] uppercase tracking-wider text-slate-500 font-bold px-2 pt-4 pb-1.5">
                 {g.group}
@@ -75,16 +110,18 @@ export default function AppShell() {
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  end={item.to === '/'}
+                  end={item.to === "/"}
                   className={({ isActive }) =>
                     `flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-[13px] mb-1 transition ${
                       isActive
-                        ? 'bg-gradient-to-r from-green-500 to-sky-500 text-[#04231a] font-semibold'
-                        : 'text-slate-300 hover:bg-[#14304f] hover:text-white'
+                        ? "bg-gradient-to-r from-green-500 to-sky-500 text-[#04231a] font-semibold"
+                        : "text-slate-300 hover:bg-[#14304f] hover:text-white"
                     }`
                   }
                 >
-                  <span className="w-[18px] text-center text-sm">{item.icon}</span>
+                  <span className="w-[18px] text-center text-sm">
+                    {item.icon}
+                  </span>
                   {item.label}
                 </NavLink>
               ))}
@@ -100,7 +137,9 @@ export default function AppShell() {
         </button>
 
         <div className="px-4 py-3 border-t border-white/10 text-[10.5px] text-slate-600 leading-relaxed">
-          <div className="font-bold text-slate-400">FY 2025-26 · Comprehensive</div>
+          <div className="font-bold text-slate-400">
+            FY 2025-26 · Comprehensive
+          </div>
           <div className="mt-0.5">SEBI BRSR · 9 NGRBC Principles</div>
         </div>
       </aside>
@@ -112,10 +151,12 @@ export default function AppShell() {
               Entity
             </span>
             <span className="px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-sm font-semibold">
-              {user?.entity}
+              {user?.role === "group-admin" || user?.role === "esg-officer"
+                ? "MEIL Group"
+                : user?.entity}
             </span>
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
-              🔒 Assigned unit
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10.5px] font-bold bg-green-100 text-green-800 border border-green-200">
+              🌐 Group scope
             </span>
           </div>
           <div className="flex-1" />
@@ -129,5 +170,5 @@ export default function AppShell() {
         </main>
       </div>
     </div>
-  )
+  );
 }

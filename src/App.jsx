@@ -2,12 +2,13 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import LoginPage from "./pages/LoginPage";
 import Dashboard from "./pages/Dashboard";
+import Placeholder from "./pages/Placeholder";
 import Collection from "./pages/Collection";
 import Approvals from "./pages/Approvals";
 import ESGReport from "./pages/ESGReport";
 import SDGReport from "./pages/SDGReport";
-import Validation from "./pages/Validation";
-import Audit from "./pages/Audit";
+import ConsolidatedReport from "./pages/ConsolidatedReport";
+import RoleGuard from "./components/RoleGuard";
 import AppShell from "./layouts/AppShell";
 
 function Protected({ children }) {
@@ -39,12 +40,62 @@ export default function App() {
             }
           >
             <Route index element={<Dashboard />} />
-            <Route path="collection" element={<Collection />} />
-            <Route path="approvals" element={<Approvals />} />
-            <Route path="esg-report" element={<ESGReport />} />
-            <Route path="sdg-report" element={<SDGReport />} />
-            <Route path="validation" element={<Validation />} />
-            <Route path="audit" element={<Audit />} />
+            <Route
+              path="collection"
+              element={
+                <RoleGuard path="/collection">
+                  <Collection />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="approvals"
+              element={
+                <RoleGuard path="/approvals">
+                  <Approvals />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="esg-report"
+              element={
+                <RoleGuard path="/esg-report">
+                  <ESGReport />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="sdg-report"
+              element={
+                <RoleGuard path="/sdg-report">
+                  <SDGReport />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="consolidated"
+              element={
+                <RoleGuard path="/consolidated">
+                  <ConsolidatedReport />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="validation"
+              element={
+                <RoleGuard path="/validation">
+                  <Placeholder title="Validation Center" />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="audit"
+              element={
+                <RoleGuard path="/audit">
+                  <Placeholder title="Audit Trail" />
+                </RoleGuard>
+              }
+            />
           </Route>
         </Routes>
       </BrowserRouter>

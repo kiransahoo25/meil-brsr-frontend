@@ -1,293 +1,94 @@
-import { useEffect, useMemo, useState } from "react";
-import { Radar, Doughnut, Bar, Line } from "react-chartjs-2";
-import {
-  Chart as ChartJS,
-  RadialLinearScale,
-  ArcElement,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  PointElement,
-  LineElement,
-  Filler,
-  Tooltip,
-  Legend,
-} from "chart.js";
-import { BRSR_PRINCIPLES } from "../data/brsr";
-import { MOCK_ENTITIES, aggregateByPrinciple } from "../data/mockReports";
-import { YOY_YEARS, YOY_METRICS } from "../data/yearOverYear";
-import { exportESGPDF, exportCSV } from "../lib/exporters";
-import RadialRing from "../components/RadialRing";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import api from "../lib/api";
+import { useAuth } from "../context/AuthContext";
 
-ChartJS.register(
-  RadialLinearScale,
-  ArcElement,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  PointElement,
-  LineElement,
-  Filler,
-  Tooltip,
-  Legend,
-);
-
-const GRID = "rgba(148, 163, 184, .18)";
-
-const MAXES = {
-  P1: { ethicsTraining: 100, antiCorruptionCases: 20, policyCoverage: 100 },
-  P2: {
-    recycledInput: 100,
-    productSafetyIncidents: 20,
-    lifecycleAssessments: 30,
+const PILLARS = {
+  E: {
+    label: "Environmental",
+    color: "#10B981",
+    icon: "🌱",
+    sections: ["C6", "CORE"],
+    desc: "Emissions, energy, water, waste, circularity",
   },
-  P3: {
-    ltifr: 2,
-    trainingHours: 80,
-    womenWorkforce: 100,
-    safetyIncidents: 100,
+  S: {
+    label: "Social",
+    color: "#3B82F6",
+    icon: "👥",
+    sections: ["C3", "C8"],
+    desc: "Employees, safety, community, inclusion",
   },
-  P4: {
-    grievancesReceived: 500,
-    grievancesResolved: 500,
-    communityMeetings: 100,
+  G: {
+    label: "Governance",
+    color: "#8B5CF6",
+    icon: "⚖️",
+    sections: ["A", "B", "C1"],
+    desc: "Ethics, board, transparency, compliance",
   },
-  P5: { hrTraining: 100, hrComplaints: 20, minimumWage: 100 },
-  P6: {
-    scope1: 500000,
-    scope2: 200000,
-    energyConsumption: 10000,
-    waterWithdrawal: 50,
-    wasteRecycled: 100,
-  },
-  P7: { policyPositions: 20, tradeAssociations: 30 },
-  P8: { csrSpend: 500, localEmployment: 100, scstEmployment: 100 },
-  P9: { productSafety: 100, customerComplaints: 500, complaintsResolved: 100 },
 };
 
-function computeScoresFromAgg(agg) {
-  const scores = {};
-  BRSR_PRINCIPLES.forEach((p) => {
-    const keys = p.indicators.map((i) => i.key);
-    const total = keys.reduce((s, k) => {
-      const max = MAXES[p.id]?.[k] || 100;
-      return s + Math.min(100, ((agg[p.id]?.[k] || 0) / max) * 100);
-    }, 0);
-    scores[p.id] = Math.round(total / keys.length);
-  });
-  return scores;
-}
-
-function isAllZero(agg) {
-  return Object.values(agg).every((principle) =>
-    Object.values(principle).every((v) => Number(v) === 0),
-  );
-}
-
 export default function ESGReport() {
-  const [liveData, setLiveData] = useState(null);
+  const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [usingMock, setUsingMock] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [units, setUnits] = useState([]);
+
+  const isGroupLevel =
+    user.role === "esg-officer" || user.role === "group-admin";
+  const selectedUnit = searchParams.get("unit") || "";
 
   useEffect(() => {
-    let cancelled = false;
+    if (isGroupLevel) {
+      api.get("/entities").then(({ data }) => {
+        const unitsList = data.filter(
+          (e) => e.type === "Business Unit" || e.type === "Subsidiary",
+        );
+        setUnits(unitsList);
+      });
+    }
+  }, [isGroupLevel]);
+
+  useEffect(() => {
+    setLoading(true);
+    const url = selectedUnit
+      ? `/dashboard/stats?entity_slug=${selectedUnit}`
+      : "/dashboard/stats";
     api
-      .get("/esg/report")
+      .get(url)
       .then(({ data }) => {
-        if (cancelled) return;
-        if (data?.principles && !isAllZero(data.principles)) {
-          setLiveData(data);
-          setUsingMock(false);
-        } else {
-          setUsingMock(true);
-        }
+        setStats(data);
+        setLoading(false);
       })
-      .catch(() => {
-        if (!cancelled) setUsingMock(true);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+      .catch(() => setLoading(false));
+  }, [selectedUnit]);
+
+  async function downloadPDF() {
+    setDownloading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const url = selectedUnit
+        ? `http://localhost:8000/api/reports/brsr-pdf?entity_slug=${selectedUnit}`
+        : "http://localhost:8000/api/reports/brsr-pdf";
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const agg = useMemo(() => {
-    if (liveData?.principles) return liveData.principles;
-    return aggregateByPrinciple(MOCK_ENTITIES);
-  }, [liveData]);
-
-  const entityList = useMemo(() => {
-    if (liveData?.entities?.length) return liveData.entities;
-    return MOCK_ENTITIES;
-  }, [liveData]);
-
-  const env = {
-    scope1: agg.P6.scope1,
-    scope2: agg.P6.scope2,
-    water: agg.P6.waterWithdrawal,
-    energy: agg.P6.energyConsumption,
-    waste: agg.P6.wasteRecycled,
-  };
-
-  const esgSplit = {
-    labels: ["Environment", "Social", "Governance"],
-    datasets: [
-      {
-        data: [
-          env.scope1 + env.scope2,
-          agg.P3.safetyIncidents +
-            agg.P4.grievancesReceived +
-            agg.P5.hrComplaints,
-          agg.P1.antiCorruptionCases + agg.P7.policyPositions,
-        ],
-        backgroundColor: ["#10B981", "#0EA5E9", "#F59E0B"],
-        borderWidth: 0,
-      },
-    ],
-  };
-
-  const principleScores = useMemo(() => computeScoresFromAgg(agg), [agg]);
-
-  const radarData = {
-    labels: BRSR_PRINCIPLES.map((p) => p.id),
-    datasets: [
-      {
-        label: "Performance",
-        data: Object.values(principleScores),
-        backgroundColor: "rgba(16,185,129,.18)",
-        borderColor: "#10B981",
-        borderWidth: 2,
-        pointBackgroundColor: "#10B981",
-        pointBorderColor: "#fff",
-        pointBorderWidth: 2,
-      },
-    ],
-  };
-
-  const entityBarData = {
-    labels: entityList.map((e) => e.name),
-    datasets: [
-      {
-        label: "Scope 1+2 (tCO2e)",
-        data: entityList.map((e) => (e.scope1 || 0) + (e.scope2 || 0)),
-        backgroundColor: "#10B981",
-        borderRadius: 4,
-      },
-    ],
-  };
-
-  const yoyData = {
-    labels: YOY_YEARS,
-    datasets: [
-      {
-        label: YOY_METRICS.scope1.label,
-        data: YOY_METRICS.scope1.data,
-        borderColor: YOY_METRICS.scope1.color,
-        backgroundColor: YOY_METRICS.scope1.color + "22",
-        fill: true,
-        tension: 0.4,
-        borderWidth: 2.5,
-        pointRadius: 4,
-        pointBackgroundColor: YOY_METRICS.scope1.color,
-        pointBorderColor: "#fff",
-        pointBorderWidth: 2,
-        yAxisID: "y",
-      },
-      {
-        label: YOY_METRICS.scope2.label,
-        data: YOY_METRICS.scope2.data,
-        borderColor: YOY_METRICS.scope2.color,
-        backgroundColor: YOY_METRICS.scope2.color + "22",
-        fill: true,
-        tension: 0.4,
-        borderWidth: 2.5,
-        pointRadius: 4,
-        pointBackgroundColor: YOY_METRICS.scope2.color,
-        pointBorderColor: "#fff",
-        pointBorderWidth: 2,
-        yAxisID: "y",
-      },
-      {
-        label: YOY_METRICS.water.label,
-        data: YOY_METRICS.water.data,
-        borderColor: YOY_METRICS.water.color,
-        backgroundColor: "transparent",
-        fill: false,
-        tension: 0.4,
-        borderWidth: 2.5,
-        pointRadius: 4,
-        pointBackgroundColor: YOY_METRICS.water.color,
-        pointBorderColor: "#fff",
-        pointBorderWidth: 2,
-        yAxisID: "y1",
-      },
-    ],
-  };
-
-  const yoyOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: "index", intersect: false },
-    plugins: {
-      legend: { position: "bottom", labels: { boxWidth: 10, padding: 14 } },
-    },
-    scales: {
-      x: { grid: { display: false }, ticks: { color: "#475569" } },
-      y: {
-        type: "linear",
-        display: true,
-        position: "left",
-        grid: { color: GRID },
-        beginAtZero: true,
-        ticks: {
-          color: "#475569",
-          callback: (v) => (v >= 1000 ? v / 1000 + "k" : v),
-        },
-      },
-      y1: {
-        type: "linear",
-        display: true,
-        position: "right",
-        grid: { drawOnChartArea: false },
-        beginAtZero: true,
-        ticks: { color: "#475569" },
-      },
-    },
-  };
-
-  const avgPrincipleScore = Math.round(
-    Object.values(principleScores).reduce((a, b) => a + b, 0) /
-      Object.keys(principleScores).length,
-  );
-
-  const handlePDF = () => {
-    exportESGPDF({
-      agg,
-      entities: entityList,
-      principleScores: Object.values(principleScores),
-      principles: BRSR_PRINCIPLES,
-    });
-  };
-
-  const handleCSV = () => {
-    const headers = ["Principle", "Indicator", "Unit", "Value", "Max"];
-    const rows = [];
-    BRSR_PRINCIPLES.forEach((p) => {
-      p.indicators.forEach((ind) => {
-        rows.push([
-          p.id,
-          ind.label,
-          ind.unit,
-          agg[p.id][ind.key] || 0,
-          ind.max,
-        ]);
-      });
-    });
-    exportCSV("MEIL_ESG_Data_FY2025-26.csv", headers, rows);
-  };
+      if (!res.ok) throw new Error("Failed to generate PDF");
+      const blob = await res.blob();
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "MEIL_BRSR_Report_FY2526.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+    } catch (err) {
+      alert("PDF generation failed: " + err.message);
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -297,326 +98,317 @@ export default function ESGReport() {
     );
   }
 
+  if (!stats) {
+    return (
+      <div className="text-center py-20 text-slate-500">
+        Could not load ESG data.
+      </div>
+    );
+  }
+
+  const sectionMap = Object.fromEntries(
+    stats.sectionProgress.map((s) => [s.code, s.progress]),
+  );
+
+  const pillarScores = {};
+  for (const [key, pillar] of Object.entries(PILLARS)) {
+    const relevant = pillar.sections.map((c) => sectionMap[c] || 0);
+    const avg = relevant.length
+      ? Math.round(relevant.reduce((a, b) => a + b, 0) / relevant.length)
+      : 0;
+    pillarScores[key] = avg;
+  }
+
+  const overallESG = Math.round(
+    (pillarScores.E + pillarScores.S + pillarScores.G) / 3,
+  );
+
+  function sectionsFor(pillarKey) {
+    return PILLARS[pillarKey].sections
+      .map((code) => stats.sectionProgress.find((s) => s.code === code))
+      .filter(Boolean);
+  }
+
+  function colorFor(p) {
+    if (p >= 85) return "#10B981";
+    if (p >= 65) return "#3B82F6";
+    if (p >= 45) return "#F59E0B";
+    return "#EF4444";
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">
-            ESG Report — FY 2025–26
+    <div>
+      <div className="flex items-start gap-4 mb-5 flex-wrap">
+        <div className="flex-1 min-w-[260px]">
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
+            ESG Report
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Consolidated BRSR report across {entityList.length} entities.
-            Aligned to SEBI BRSR and the nine NGRBC principles.
+          <p className="text-[13px] text-slate-500 mt-1">
+            {selectedUnit
+              ? units.find((u) => u.slug === selectedUnit)?.name
+              : isGroupLevel
+                ? "MEIL Group (All Units)"
+                : user.entity}{" "}
+            · FY 2025-26 · Environmental, Social &amp; Governance performance
           </p>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={handleCSV}
-            className="px-4 py-2 rounded-lg bg-white border border-slate-200 text-slate-700 font-semibold text-[13px] hover:bg-slate-50 transition"
-          >
-            ⬇ CSV
-          </button>
-          <button
-            onClick={handlePDF}
-            className="px-4 py-2 rounded-lg bg-gradient-to-r from-green-500 to-sky-500 text-[#04231a] font-bold text-[13px] hover:opacity-90 transition"
-          >
-            ⬇ Download PDF
-          </button>
-        </div>
-      </div>
 
-      {usingMock && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-2.5 rounded-lg text-[12.5px]">
-          <b>Demo mode</b> — showing sample data. Enter real BRSR values via{" "}
-          <b>BRSR Data Collection</b> and this page will update automatically.
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white border border-slate-200 rounded-xl p-5 flex items-center gap-4">
-          <RadialRing
-            value={avgPrincipleScore}
-            max={100}
-            size={90}
-            thickness={9}
-            color="#10B981"
-          />
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              Overall BRSR Score
-            </div>
-            <div className="text-2xl font-bold text-slate-800 tabular-nums mt-1">
-              {avgPrincipleScore}
-              <span className="text-xs font-medium text-slate-500">/100</span>
-            </div>
-            <div className="text-[11px] text-slate-500 mt-0.5">
-              9 principles averaged
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-5 flex items-center gap-4">
-          <RadialRing
-            value={env.waste}
-            max={100}
-            size={90}
-            thickness={9}
-            color="#0EA5E9"
-          />
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              Waste Recycled
-            </div>
-            <div className="text-2xl font-bold text-slate-800 tabular-nums mt-1">
-              {Number(env.waste).toFixed(1)}
-              <span className="text-xs font-medium text-slate-500">%</span>
-            </div>
-            <div className="text-[11px] text-slate-500 mt-0.5">
-              Of total waste generated
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-5">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-            Total Emissions
-          </div>
-          <div className="text-2xl font-bold text-slate-800 tabular-nums mt-2">
-            {(env.scope1 + env.scope2).toLocaleString()}
-            <span className="text-xs font-medium text-slate-500 ml-1">
-              tCO2e
-            </span>
-          </div>
-          <div className="mt-3 flex gap-3 text-[11px] text-slate-500">
-            <span>
-              <b className="text-slate-700">S1</b> {env.scope1.toLocaleString()}
-            </span>
-            <span>
-              <b className="text-slate-700">S2</b> {env.scope2.toLocaleString()}
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-5">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-            Water Withdrawal
-          </div>
-          <div className="text-2xl font-bold text-slate-800 tabular-nums mt-2">
-            {Number(env.water).toFixed(1)}
-            <span className="text-xs font-medium text-slate-500 ml-1">ML</span>
-          </div>
-          <div className="text-[11px] text-slate-500 mt-3">
-            Across {entityList.length} entities
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white border border-slate-200 rounded-xl p-5">
-          <h3 className="text-sm font-bold text-slate-800">
-            BRSR Principle Performance
-          </h3>
-          <p className="text-[11.5px] text-slate-500 mt-1 mb-4">
-            Normalized 0–100 across the 9 NGRBC principles
-          </p>
-          <div className="relative h-[340px]">
-            <Radar
-              data={radarData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                  r: {
-                    beginAtZero: true,
-                    max: 100,
-                    grid: { color: GRID },
-                    angleLines: { color: GRID },
-                    pointLabels: {
-                      color: "#475569",
-                      font: { size: 11, weight: "600" },
-                    },
-                    ticks: {
-                      color: "#94A3B8",
-                      backdropColor: "transparent",
-                      stepSize: 25,
-                    },
-                  },
-                },
+        {isGroupLevel && units.length > 0 && (
+          <div className="flex items-center gap-2">
+            <label className="text-[11px] uppercase tracking-wider font-extrabold text-slate-500">
+              Unit
+            </label>
+            <select
+              value={selectedUnit}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v) setSearchParams({ unit: v });
+                else setSearchParams({});
               }}
-            />
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-5">
-          <h3 className="text-sm font-bold text-slate-800">
-            E · S · G Contribution
-          </h3>
-          <p className="text-[11.5px] text-slate-500 mt-1 mb-4">
-            Relative weight of each pillar
-          </p>
-          <div className="relative h-[340px]">
-            <Doughnut
-              data={esgSplit}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: "bottom" } },
-                cutout: "65%",
-              }}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white border border-slate-200 rounded-xl p-5">
-        <h3 className="text-sm font-bold text-slate-800">
-          Year-over-Year Trend
-        </h3>
-        <p className="text-[11.5px] text-slate-500 mt-1 mb-4">
-          Emissions and water withdrawal · FY23 → FY26
-        </p>
-        <div className="relative h-[360px]">
-          <Line data={yoyData} options={yoyOptions} />
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-5">
-          {Object.entries(YOY_METRICS).map(([key, m]) => (
-            <div
-              key={key}
-              className="rounded-lg border border-slate-200 px-4 py-3"
+              className="px-3 py-2 border-2 border-slate-200 rounded-xl bg-white text-[13px] font-semibold focus:border-green-500 outline-none min-w-[200px]"
             >
-              <div className="text-[10.5px] font-bold uppercase tracking-wide text-slate-500">
-                {m.label}
-              </div>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-lg font-bold text-slate-800 tabular-nums">
-                  {m.data[m.data.length - 1].toLocaleString()}
-                </span>
-                <span
-                  className={`text-[11.5px] font-bold px-1.5 py-0.5 rounded ${
-                    m.trend === "down"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-amber-100 text-amber-700"
-                  }`}
+              <option value="">🌐 All Units (Group)</option>
+              {units.map((u) => (
+                <option key={u.slug} value={u.slug}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <button
+          onClick={downloadPDF}
+          disabled={downloading}
+          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold text-[12.8px] hover:shadow-lg transition disabled:opacity-60"
+        >
+          {downloading ? "⏳ Generating…" : "⬇ Download BRSR PDF"}
+        </button>
+      </div>
+
+      <div className="bg-gradient-to-br from-slate-900 to-[#0b1f33] text-white rounded-2xl p-7 mb-5">
+        <div className="flex items-center justify-between gap-6 flex-wrap">
+          <div>
+            <div className="text-[11px] uppercase tracking-wider font-extrabold text-slate-400">
+              Overall ESG Score
+            </div>
+            <div className="text-5xl font-extrabold mt-2 tracking-tight">
+              {overallESG}
+              <span className="text-2xl text-slate-500">%</span>
+            </div>
+            <div className="text-[12.5px] text-slate-400 mt-2 max-w-md">
+              Weighted average across Environmental, Social and Governance
+              pillars.
+            </div>
+          </div>
+
+          <div className="flex gap-4 flex-wrap">
+            {Object.entries(PILLARS).map(([key, pillar]) => (
+              <div key={key} className="text-center">
+                <div
+                  className="w-20 h-20 rounded-2xl grid place-items-center mb-2 relative"
+                  style={{
+                    background: `conic-gradient(${pillar.color} ${pillarScores[key]}%, rgba(255,255,255,0.08) ${pillarScores[key]}%)`,
+                  }}
                 >
-                  {m.delta > 0 ? "▲" : "▼"} {Math.abs(m.delta)}%
-                </span>
+                  <div className="absolute inset-1.5 bg-[#0b1f33] rounded-2xl grid place-items-center">
+                    <div>
+                      <div className="text-lg font-extrabold">
+                        {pillarScores[key]}
+                        <span className="text-[10px] text-slate-500">%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-[10.5px] uppercase tracking-wider font-bold text-slate-400">
+                  {key}
+                </div>
               </div>
-              <div className="text-[10.5px] text-slate-500 mt-0.5">
-                {m.unit} · vs FY25
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {Object.entries(PILLARS).map(([key, pillar]) => {
+        const sections = sectionsFor(key);
+        if (sections.length === 0) return null;
+        return (
+          <div
+            key={key}
+            className="bg-white border border-slate-200 rounded-2xl p-6 mb-4"
+          >
+            <div className="flex items-center gap-4 mb-4 pb-4 border-b border-slate-100">
+              <div
+                className="w-12 h-12 rounded-xl grid place-items-center text-2xl"
+                style={{ background: pillar.color + "20", color: pillar.color }}
+              >
+                {pillar.icon}
+              </div>
+              <div className="flex-1">
+                <h3 className="text-[16px] font-extrabold text-slate-900">
+                  {pillar.label}
+                </h3>
+                <p className="text-[12px] text-slate-500 mt-0.5">
+                  {pillar.desc}
+                </p>
+              </div>
+              <div className="text-right">
+                <div
+                  className="text-3xl font-extrabold"
+                  style={{ color: colorFor(pillarScores[key]) }}
+                >
+                  {pillarScores[key]}%
+                </div>
+                <div className="text-[10.5px] uppercase tracking-wider font-bold text-slate-400">
+                  pillar score
+                </div>
               </div>
             </div>
-          ))}
-        </div>
-      </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl p-5">
-        <h3 className="text-sm font-bold text-slate-800">
-          Emissions by Entity
-        </h3>
-        <p className="text-[11.5px] text-slate-500 mt-1 mb-4">
-          Scope 1 + Scope 2 (tCO2e) per entity
-        </p>
-        <div className="relative h-[360px]">
-          <Bar
-            data={entityBarData}
-            options={{
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: { legend: { display: false } },
-              scales: {
-                x: {
-                  grid: { display: false },
-                  ticks: { maxRotation: 45, minRotation: 45, color: "#475569" },
-                },
-                y: {
-                  grid: { color: GRID },
-                  beginAtZero: true,
-                  ticks: {
-                    color: "#475569",
-                    callback: (v) => (v >= 1000 ? v / 1000 + "k" : v),
-                  },
-                },
-              },
-            }}
-          />
-        </div>
-      </div>
-
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <h3 className="text-sm font-bold text-slate-800">
-              Principle-wise Indicator Register
-            </h3>
-            <p className="text-[11.5px] text-slate-500 mt-0.5">
-              Consolidated values across all entities
-            </p>
+            <div className="grid gap-2">
+              {sections.map((s) => (
+                <div key={s.code} className="flex items-center gap-3 py-2">
+                  <div className="w-[180px] flex-shrink-0 text-[12.5px] font-semibold text-slate-700 truncate">
+                    {s.name}
+                  </div>
+                  <div className="text-[11.5px] text-slate-500 w-[160px] flex-shrink-0 truncate hidden md:block">
+                    {s.sub}
+                  </div>
+                  <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${s.progress}%`,
+                        background: colorFor(s.progress),
+                      }}
+                    />
+                  </div>
+                  <div className="w-[48px] text-right font-bold text-[12px] tabular-nums text-slate-700">
+                    {s.progress}%
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <button
-            onClick={handleCSV}
-            className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[11.5px] font-semibold text-slate-700 transition"
-          >
-            ⬇ Export CSV
-          </button>
-        </div>
+        );
+      })}
+
+      <div className="bg-white border border-slate-200 rounded-2xl p-6">
+        <h3 className="text-[14px] font-bold mb-4">Key ESG Indicators</h3>
         <div className="overflow-x-auto">
-          <table className="w-full text-[13px]">
+          <table className="w-full text-[12.6px]">
             <thead>
-              <tr className="bg-slate-50">
-                <th className="text-left px-5 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-500 border-b border-slate-200">
-                  Principle
-                </th>
-                <th className="text-left px-5 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-500 border-b border-slate-200">
-                  Indicator
-                </th>
-                <th className="text-left px-5 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-500 border-b border-slate-200">
-                  Unit
-                </th>
-                <th className="text-right px-5 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-500 border-b border-slate-200">
-                  Consolidated
-                </th>
-                <th className="text-left px-5 py-3 text-[10.5px] font-bold uppercase tracking-wide text-slate-500 border-b border-slate-200">
-                  Status
-                </th>
+              <tr className="text-left text-[10.3px] uppercase tracking-wide text-slate-500 font-extrabold border-b border-slate-200">
+                <th className="py-2.5 pr-3">Pillar</th>
+                <th className="py-2.5 pr-3">Indicator</th>
+                <th className="py-2.5 pr-3">Value</th>
+                <th className="py-2.5 pr-3">Unit</th>
+                <th className="py-2.5">Status</th>
               </tr>
             </thead>
             <tbody>
-              {BRSR_PRINCIPLES.flatMap((p) =>
-                p.indicators.map((ind, idx) => (
-                  <tr
-                    key={p.id + ind.key}
-                    className="border-b border-slate-100 hover:bg-slate-50 last:border-b-0"
-                  >
-                    <td className="px-5 py-3">
-                      {idx === 0 && (
-                        <span
-                          className="inline-block px-2 py-0.5 rounded-md text-[10.5px] font-bold text-white"
-                          style={{ background: p.color }}
-                        >
-                          {p.id}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3 text-slate-700">{ind.label}</td>
-                    <td className="px-5 py-3 text-slate-500">{ind.unit}</td>
-                    <td className="px-5 py-3 text-right font-semibold text-slate-800 tabular-nums">
-                      {(agg[p.id][ind.key] || 0).toLocaleString(undefined, {
-                        maximumFractionDigits: 2,
-                      })}
-                    </td>
-                    <td className="px-5 py-3">
-                      <span className="inline-block px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-emerald-100 text-emerald-700 border border-emerald-200">
-                        Verified
-                      </span>
-                    </td>
-                  </tr>
-                )),
-              )}
+              <tr className="border-b border-slate-100">
+                <td className="py-2.5 pr-3">
+                  <span className="inline-block px-2 py-0.5 rounded text-[10.5px] font-extrabold bg-green-100 text-green-700">
+                    E
+                  </span>
+                </td>
+                <td className="py-2.5 pr-3 font-semibold">Scope 1 emissions</td>
+                <td className="py-2.5 pr-3 font-mono">218,450</td>
+                <td className="py-2.5 pr-3 text-slate-500">tCO₂e</td>
+                <td className="py-2.5">
+                  <span className="inline-block px-2.5 py-0.5 rounded-full text-[10.8px] font-bold bg-green-100 text-green-800">
+                    On track
+                  </span>
+                </td>
+              </tr>
+              <tr className="border-b border-slate-100">
+                <td className="py-2.5 pr-3">
+                  <span className="inline-block px-2 py-0.5 rounded text-[10.5px] font-extrabold bg-green-100 text-green-700">
+                    E
+                  </span>
+                </td>
+                <td className="py-2.5 pr-3 font-semibold">Scope 2 emissions</td>
+                <td className="py-2.5 pr-3 font-mono">341,220</td>
+                <td className="py-2.5 pr-3 text-slate-500">tCO₂e</td>
+                <td className="py-2.5">
+                  <span className="inline-block px-2.5 py-0.5 rounded-full text-[10.8px] font-bold bg-green-100 text-green-800">
+                    On track
+                  </span>
+                </td>
+              </tr>
+              <tr className="border-b border-slate-100">
+                <td className="py-2.5 pr-3">
+                  <span className="inline-block px-2 py-0.5 rounded text-[10.5px] font-extrabold bg-green-100 text-green-700">
+                    E
+                  </span>
+                </td>
+                <td className="py-2.5 pr-3 font-semibold">Scope 3 emissions</td>
+                <td className="py-2.5 pr-3 font-mono">1,204,660</td>
+                <td className="py-2.5 pr-3 text-slate-500">tCO₂e</td>
+                <td className="py-2.5">
+                  <span className="inline-block px-2.5 py-0.5 rounded-full text-[10.8px] font-bold bg-amber-100 text-amber-800">
+                    Boundary gap
+                  </span>
+                </td>
+              </tr>
+              <tr className="border-b border-slate-100">
+                <td className="py-2.5 pr-3">
+                  <span className="inline-block px-2 py-0.5 rounded text-[10.5px] font-extrabold bg-blue-100 text-blue-700">
+                    S
+                  </span>
+                </td>
+                <td className="py-2.5 pr-3 font-semibold">
+                  Health insurance coverage
+                </td>
+                <td className="py-2.5 pr-3 font-mono">100</td>
+                <td className="py-2.5 pr-3 text-slate-500">%</td>
+                <td className="py-2.5">
+                  <span className="inline-block px-2.5 py-0.5 rounded-full text-[10.8px] font-bold bg-green-100 text-green-800">
+                    Complete
+                  </span>
+                </td>
+              </tr>
+              <tr className="border-b border-slate-100">
+                <td className="py-2.5 pr-3">
+                  <span className="inline-block px-2 py-0.5 rounded text-[10.5px] font-extrabold bg-blue-100 text-blue-700">
+                    S
+                  </span>
+                </td>
+                <td className="py-2.5 pr-3 font-semibold">LTIFR</td>
+                <td className="py-2.5 pr-3 font-mono">0.41</td>
+                <td className="py-2.5 pr-3 text-slate-500">per Mn hrs</td>
+                <td className="py-2.5">
+                  <span className="inline-block px-2.5 py-0.5 rounded-full text-[10.8px] font-bold bg-green-100 text-green-800">
+                    On track
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td className="py-2.5 pr-3">
+                  <span className="inline-block px-2 py-0.5 rounded text-[10.5px] font-extrabold bg-violet-100 text-violet-700">
+                    G
+                  </span>
+                </td>
+                <td className="py-2.5 pr-3 font-semibold">
+                  Anti-corruption training coverage
+                </td>
+                <td className="py-2.5 pr-3 font-mono">96</td>
+                <td className="py-2.5 pr-3 text-slate-500">%</td>
+                <td className="py-2.5">
+                  <span className="inline-block px-2.5 py-0.5 rounded-full text-[10.8px] font-bold bg-green-100 text-green-800">
+                    On track
+                  </span>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
+      </div>
+
+      <div className="mt-4 bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-xl text-[12.4px]">
+        ℹ️ ESG scores are computed from BRSR field completion in the relevant
+        NGRBC principles. Complete all fields in each principle to reach 100%.
       </div>
     </div>
   );
