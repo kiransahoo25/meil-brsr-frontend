@@ -5,13 +5,13 @@ import CommentThread from "./CommentThread";
 function FieldCard({ f }) {
   return (
     <div
-      className={`border rounded-xl p-4 mb-3 ${
+      className={`border rounded-xl p-3 lg:p-4 mb-2.5 lg:mb-3 ${
         f.status === "flagged"
           ? "border-red-200 bg-red-50/40"
           : "border-slate-200"
       }`}
     >
-      <div className="flex items-start gap-3 mb-2">
+      <div className="flex items-start gap-2 lg:gap-3 mb-2">
         <div className="flex-1 min-w-0">
           <div className="text-[10.3px] text-slate-400 font-bold tracking-wide mb-0.5">
             {f.code}
@@ -19,12 +19,12 @@ function FieldCard({ f }) {
               <span className="text-red-500 ml-1">· Required</span>
             )}
           </div>
-          <div className="text-[12.8px] font-semibold leading-snug text-slate-800">
+          <div className="text-[12.5px] lg:text-[12.8px] font-semibold leading-snug text-slate-800">
             {f.label}
           </div>
         </div>
         <span
-          className={`flex-shrink-0 px-2.5 py-0.5 rounded-full text-[10.8px] font-bold ${
+          className={`flex-shrink-0 px-2 lg:px-2.5 py-0.5 rounded-full text-[10.8px] font-bold ${
             f.status === "complete"
               ? "bg-green-100 text-green-800"
               : f.status === "flagged"
@@ -35,7 +35,7 @@ function FieldCard({ f }) {
           {f.status}
         </span>
       </div>
-      <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-[13px] text-slate-800 font-mono">
+      <div className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-[12.5px] lg:text-[13px] text-slate-800 font-mono break-all">
         {f.value || (
           <span className="text-slate-400 italic">No value entered</span>
         )}
@@ -119,21 +119,22 @@ export default function SubmissionModal({ submission, onClose, onAction }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-slate-900/60 flex items-end sm:items-center justify-center sm:p-4"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl"
+        className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-5xl max-h-[95vh] sm:max-h-[92vh] flex flex-col shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-6 py-4 border-b border-slate-200 flex items-start gap-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className="font-mono text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-bold">
+        {/* Header */}
+        <div className="px-4 lg:px-6 py-3 lg:py-4 border-b border-slate-200 flex items-start gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 lg:gap-2 mb-1 flex-wrap">
+              <span className="font-mono text-[10.5px] lg:text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-bold">
                 {submission.id}
               </span>
               <span
-                className={`inline-block px-2.5 py-0.5 rounded-full text-[10.8px] font-bold ${
+                className={`inline-block px-2 lg:px-2.5 py-0.5 rounded-full text-[10.5px] lg:text-[10.8px] font-bold ${
                   submission.state === "Approved"
                     ? "bg-green-100 text-green-800"
                     : submission.state === "Rejected"
@@ -147,69 +148,66 @@ export default function SubmissionModal({ submission, onClose, onAction }) {
               </span>
               <button
                 onClick={() => setShowComments(!showComments)}
-                className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10.8px] font-bold border transition ${
+                className={`inline-flex items-center gap-1 px-2 lg:px-3 py-0.5 rounded-full text-[10.5px] lg:text-[10.8px] font-bold border transition ${
                   showComments
                     ? "bg-slate-800 text-white border-slate-800"
                     : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
                 }`}
               >
-                💬 {showComments ? "Hide Comments" : "Comments"}
+                💬 {showComments ? "Hide" : "Comments"}
               </button>
             </div>
-            <h2 className="text-lg font-bold text-slate-800">
+            <h2 className="text-base lg:text-lg font-bold text-slate-800 truncate">
               {submission.section_name}
             </h2>
-            <p className="text-[12px] text-slate-500 mt-0.5">
-              {submission.entity_name} · Submitted by{" "}
-              <b>{submission.submitted_by}</b>
-              {submission.approver && submission.approver !== "—" && (
-                <>
-                  {" "}
-                  · Actioned by <b>{submission.approver}</b>
-                </>
-              )}
+            <p className="text-[11px] lg:text-[12px] text-slate-500 mt-0.5 truncate">
+              {submission.entity_name} · By <b>{submission.submitted_by}</b>
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 text-2xl leading-none px-2"
+            className="text-slate-400 hover:text-slate-700 text-2xl leading-none w-8 h-8 grid place-items-center rounded-lg hover:bg-slate-100 flex-shrink-0"
+            aria-label="Close"
           >
             ×
           </button>
         </div>
 
-        <div className="flex-1 flex min-h-0">
-          <div className="flex-1 flex flex-col min-w-0 border-r border-slate-200">
-            <div className="flex gap-1 border-b border-slate-200 px-6">
+        <div className="flex-1 flex flex-col lg:flex-row min-h-0">
+          {/* Left: Data view */}
+          <div
+            className={`flex-1 flex flex-col min-w-0 ${showComments ? "lg:border-r lg:border-slate-200" : ""}`}
+          >
+            <div className="flex gap-1 border-b border-slate-200 px-3 lg:px-6 overflow-x-auto">
               <button
                 onClick={() => setTab("section")}
-                className={`px-4 py-2.5 text-[12.8px] font-semibold border-b-2 -mb-px transition ${
+                className={`px-3 lg:px-4 py-2.5 text-[12px] lg:text-[12.8px] font-semibold border-b-2 -mb-px transition whitespace-nowrap ${
                   tab === "section"
                     ? "text-green-700 border-green-500"
                     : "text-slate-500 border-transparent hover:text-slate-800"
                 }`}
               >
-                Submitted Section ({sectionFields.length})
+                Section ({sectionFields.length})
               </button>
               <button
                 onClick={() => setTab("all")}
-                className={`px-4 py-2.5 text-[12.8px] font-semibold border-b-2 -mb-px transition ${
+                className={`px-3 lg:px-4 py-2.5 text-[12px] lg:text-[12.8px] font-semibold border-b-2 -mb-px transition whitespace-nowrap ${
                   tab === "all"
                     ? "text-green-700 border-green-500"
                     : "text-slate-500 border-transparent hover:text-slate-800"
                 }`}
               >
-                All Entity Data ({allFields.length})
+                All Data ({allFields.length})
               </button>
             </div>
 
             {submission.remarks && (
-              <div className="mx-6 mt-4 bg-amber-50 border border-amber-200 text-amber-900 px-4 py-2.5 rounded-lg text-[12.4px]">
+              <div className="mx-3 lg:mx-6 mt-3 lg:mt-4 bg-amber-50 border border-amber-200 text-amber-900 px-3 lg:px-4 py-2.5 rounded-lg text-[11.5px] lg:text-[12.4px]">
                 <strong>Remarks:</strong> {submission.remarks}
               </div>
             )}
 
-            <div className="flex-1 overflow-y-auto px-6 py-4">
+            <div className="flex-1 overflow-y-auto px-3 lg:px-6 py-3 lg:py-4">
               {loading && (
                 <div className="text-center py-10 text-slate-500">
                   Loading data…
@@ -236,8 +234,8 @@ export default function SubmissionModal({ submission, onClose, onAction }) {
                 tab === "all" &&
                 grouped &&
                 Object.entries(grouped).map(([sectionCode, fields]) => (
-                  <div key={sectionCode} className="mb-6">
-                    <h3 className="text-[12.5px] uppercase tracking-wide font-extrabold text-slate-500 mb-3 pb-1.5 border-b border-slate-200">
+                  <div key={sectionCode} className="mb-5 lg:mb-6">
+                    <h3 className="text-[11.5px] lg:text-[12.5px] uppercase tracking-wide font-extrabold text-slate-500 mb-2 lg:mb-3 pb-1.5 border-b border-slate-200">
                       {SECTION_NAMES[sectionCode] || `Section ${sectionCode}`} ·{" "}
                       {fields.length} fields
                     </h3>
@@ -249,50 +247,54 @@ export default function SubmissionModal({ submission, onClose, onAction }) {
             </div>
           </div>
 
+          {/* Right: Comments (slides below on mobile, side panel on desktop) */}
           {showComments && (
-            <div className="w-[360px] flex-shrink-0 overflow-y-auto p-5">
+            <div className="lg:w-[360px] lg:flex-shrink-0 border-t lg:border-t-0 border-slate-200 overflow-y-auto p-4 lg:p-5 max-h-[40vh] lg:max-h-none">
               <CommentThread submissionId={submission.id} />
             </div>
           )}
         </div>
 
-        <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-2 flex-wrap">
+        {/* Footer */}
+        <div className="px-3 lg:px-6 py-3 lg:py-4 border-t border-slate-200 flex flex-wrap items-center gap-2">
           {!canAct && (
-            <span className="text-[11.5px] text-slate-400 italic mr-auto">
-              Already actioned. No further actions available.
+            <span className="text-[11px] lg:text-[11.5px] text-slate-400 italic w-full sm:w-auto sm:mr-auto">
+              Already actioned.
             </span>
           )}
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg border border-slate-200 text-[12.8px] font-semibold text-slate-700 hover:bg-slate-50"
-          >
-            Close
-          </button>
-          {canAct && (
-            <>
-              <button
-                disabled={busy}
-                onClick={() => handleAction("request-changes")}
-                className="px-4 py-2 rounded-lg border border-slate-200 text-[12.8px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-              >
-                Request Changes
-              </button>
-              <button
-                disabled={busy}
-                onClick={() => handleAction("reject")}
-                className="px-4 py-2 rounded-lg bg-red-50 border border-red-200 text-[12.8px] font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
-              >
-                Reject
-              </button>
-              <button
-                disabled={busy}
-                onClick={() => handleAction("approve")}
-                className="px-4 py-2 rounded-lg bg-green-600 text-white text-[12.8px] font-semibold hover:bg-green-700 disabled:opacity-50"
-              >
-                {busy ? "Working…" : "✓ Approve"}
-              </button>
-            </>
-          )}
+          <div className="flex gap-2 flex-1 sm:flex-initial sm:ml-auto flex-wrap">
+            <button
+              onClick={onClose}
+              className="px-3 lg:px-4 py-2 rounded-lg border border-slate-200 text-[12px] lg:text-[12.8px] font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              Close
+            </button>
+            {canAct && (
+              <>
+                <button
+                  disabled={busy}
+                  onClick={() => handleAction("request-changes")}
+                  className="px-3 lg:px-4 py-2 rounded-lg border border-slate-200 text-[12px] lg:text-[12.8px] font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Changes
+                </button>
+                <button
+                  disabled={busy}
+                  onClick={() => handleAction("reject")}
+                  className="px-3 lg:px-4 py-2 rounded-lg bg-red-50 border border-red-200 text-[12px] lg:text-[12.8px] font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50"
+                >
+                  Reject
+                </button>
+                <button
+                  disabled={busy}
+                  onClick={() => handleAction("approve")}
+                  className="px-3 lg:px-4 py-2 rounded-lg bg-green-600 text-white text-[12px] lg:text-[12.8px] font-semibold hover:bg-green-700 disabled:opacity-50"
+                >
+                  {busy ? "…" : "✓ Approve"}
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

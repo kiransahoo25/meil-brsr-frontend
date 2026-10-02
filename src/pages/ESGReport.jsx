@@ -188,7 +188,7 @@ export default function ESGReport() {
         </button>
       </div>
 
-      <div className="bg-gradient-to-br from-slate-900 to-[#0b1f33] text-white rounded-2xl p-7 mb-5">
+      <div className="bg-gradient-to-br from-slate-900 to-[#0b1f33] text-white rounded-2xl p-5 lg:p-7 mb-5">
         <div className="flex items-center justify-between gap-6 flex-wrap">
           <div>
             <div className="text-[11px] uppercase tracking-wider font-extrabold text-slate-400">

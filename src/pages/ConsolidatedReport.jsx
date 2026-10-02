@@ -64,7 +64,7 @@ export default function ConsolidatedReport() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5 mb-5">
-        <div className="bg-gradient-to-br from-slate-900 to-[#0b1f33] text-white rounded-2xl p-5">
+        <div className="bg-gradient-to-br from-slate-900 to-[#0b1f33] text-white rounded-2xl p-4 lg:p-5">
           <div className="text-[10.5px] uppercase tracking-wider font-extrabold text-slate-400">
             Group Completion
           </div>
