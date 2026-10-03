@@ -52,10 +52,9 @@ export default function AppShell() {
     navigate('/login')
   }
 
-  // Auto-logout after 3 minutes of inactivity
   const { showWarning, secondsLeft, reset } = useIdleTimer({
-    timeoutMs: 3 * 60 * 1000,     // 3 minutes
-    warningBeforeMs: 15 * 1000,   // 15 seconds warning
+    timeoutMs: 3 * 60 * 1000,
+    warningBeforeMs: 15 * 1000,
     onIdle: handleLogout,
     enabled: !!user,
   })
@@ -93,12 +92,15 @@ export default function AppShell() {
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0`}
       >
-        <div className="p-4 border-b border-white/10 flex gap-3 items-center">
+        {/* Brand */}
+        <div className="p-4 border-b border-white/10 flex gap-3 items-center flex-shrink-0">
           <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-green-500 to-sky-500 grid place-items-center font-extrabold text-[#04231a] flex-shrink-0">
             M
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-xs font-bold text-white leading-tight">MEIL BRSR Portal</h1>
+            <h1 className="text-xs font-bold text-white leading-tight">
+              MEIL BRSR Portal
+            </h1>
             <span className="text-[10px] text-slate-500 uppercase tracking-wide">
               ESG · SDG Suite
             </span>
@@ -112,7 +114,8 @@ export default function AppShell() {
           </button>
         </div>
 
-        <div className="p-4 border-b border-white/10 flex gap-3 items-center">
+        {/* User badge */}
+        <div className="p-4 border-b border-white/10 flex gap-3 items-center flex-shrink-0">
           <div className="w-9 h-9 rounded-full bg-[#1d4066] grid place-items-center text-xs font-extrabold text-white flex-shrink-0">
             {user?.initials}
           </div>
@@ -124,6 +127,18 @@ export default function AppShell() {
           </div>
         </div>
 
+        {/* ✨ Sign Out — moved UP, right after user badge */}
+        <div className="p-3 border-b border-white/10 flex-shrink-0">
+          <button
+            onClick={handleLogout}
+            className="w-full py-2.5 rounded-lg bg-red-500/10 text-red-300 text-xs font-bold border border-red-500/20 hover:bg-red-500/20 active:bg-red-500/30 transition flex items-center justify-center gap-2"
+          >
+            <span>⏻</span>
+            <span>Sign Out</span>
+          </button>
+        </div>
+
+        {/* Nav */}
         <nav className="p-3 flex-1">
           {visibleGroups.map((g) => (
             <div key={g.group}>
@@ -151,14 +166,8 @@ export default function AppShell() {
           ))}
         </nav>
 
-        <button
-          onClick={handleLogout}
-          className="m-3 p-2.5 rounded-lg bg-red-500/10 text-red-300 text-xs font-bold border border-red-500/20 hover:bg-red-500/20 transition"
-        >
-          ⏻ Sign Out
-        </button>
-
-        <div className="px-4 py-3 border-t border-white/10 text-[10.5px] text-slate-600 leading-relaxed hidden lg:block">
+        {/* Footer */}
+        <div className="px-4 py-3 border-t border-white/10 text-[10.5px] text-slate-600 leading-relaxed hidden lg:block flex-shrink-0">
           <div className="font-bold text-slate-400">FY 2025-26 · Comprehensive</div>
           <div className="mt-0.5">SEBI BRSR · 9 NGRBC Principles</div>
         </div>
@@ -208,7 +217,6 @@ export default function AppShell() {
         </main>
       </div>
 
-      {/* Idle warning overlay */}
       {showWarning && (
         <IdleWarningModal
           secondsLeft={secondsLeft}
