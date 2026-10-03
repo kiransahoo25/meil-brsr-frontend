@@ -8,6 +8,7 @@ import Approvals from "./pages/Approvals";
 import ESGReport from "./pages/ESGReport";
 import SDGReport from "./pages/SDGReport";
 import ConsolidatedReport from "./pages/ConsolidatedReport";
+import Validation from "./pages/Validation";
 import RoleGuard from "./components/RoleGuard";
 import AppShell from "./layouts/AppShell";
 
@@ -84,7 +85,7 @@ export default function App() {
               path="validation"
               element={
                 <RoleGuard path="/validation">
-                  <Placeholder title="Validation Center" />
+                  <Validation />
                 </RoleGuard>
               }
             />
