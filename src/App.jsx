@@ -9,6 +9,7 @@ import ESGReport from "./pages/ESGReport";
 import SDGReport from "./pages/SDGReport";
 import ConsolidatedReport from "./pages/ConsolidatedReport";
 import Validation from "./pages/Validation";
+import Audit from "./pages/Audit";
 import RoleGuard from "./components/RoleGuard";
 import AppShell from "./layouts/AppShell";
 
@@ -93,7 +94,7 @@ export default function App() {
               path="audit"
               element={
                 <RoleGuard path="/audit">
-                  <Placeholder title="Audit Trail" />
+                  <Audit />
                 </RoleGuard>
               }
             />
