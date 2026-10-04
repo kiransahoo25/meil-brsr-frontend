@@ -1,54 +1,49 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import api from "../lib/api";
-import { useAuth } from "../context/AuthContext";
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import api from '../lib/api'
+import { useAuth } from '../context/AuthContext'
+import AIGapAnalysis from '../components/AIGapAnalysis'
 
 function colorFor(p) {
-  if (p >= 85) return "#10B981";
-  if (p >= 65) return "#3B82F6";
-  if (p >= 45) return "#F59E0B";
-  return "#EF4444";
+  if (p >= 85) return '#10B981'
+  if (p >= 65) return '#3B82F6'
+  if (p >= 45) return '#F59E0B'
+  return '#EF4444'
 }
 
 export default function Dashboard() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [stats, setStats] = useState(null);
-  const [group, setGroup] = useState(null);
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const [stats, setStats] = useState(null)
+  const [group, setGroup] = useState(null)
 
-  // Load standard stats for all roles
   useEffect(() => {
-    api.get("/dashboard/stats").then(({ data }) => setStats(data));
-  }, []);
+    api.get('/dashboard/stats').then(({ data }) => setStats(data))
+  }, [])
 
-  // Load group overview ONLY for group-admin
   useEffect(() => {
-    if (user.role === "group-admin") {
-      api.get("/group/overview").then(({ data }) => setGroup(data));
+    if (user.role === 'group-admin') {
+      api.get('/group/overview').then(({ data }) => setGroup(data))
     }
-  }, [user.role]);
+  }, [user.role])
 
   // ============================================================
   // GROUP ADMIN VIEW
   // ============================================================
-  if (user.role === "group-admin") {
+  if (user.role === 'group-admin') {
     if (!group) {
       return (
-        <div className="text-center py-20 text-slate-500">
-          Loading group overview…
-        </div>
-      );
+        <div className="text-center py-20 text-slate-500">Loading group overview…</div>
+      )
     }
 
-    const { totals, units } = group;
-    const equityUnits = units.filter((u) => u.ownership_pct < 100);
+    const { totals, units } = group
 
     return (
       <div>
-        {/* Hero */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Hi, {user.name.split(" ")[0]} 👋
+            Hi, {user.name.split(' ')[0]} 👋
           </h1>
           <p className="text-sm text-slate-500 mt-1">
             MEIL Group overview · 7 Business Units + 4 Subsidiaries · FY 2025-26
@@ -106,10 +101,13 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* ✨ AI Copilot — Gap Analysis */}
+        <AIGapAnalysis />
+
         {/* Action cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 mb-5">
           <button
-            onClick={() => navigate("/consolidated")}
+            onClick={() => navigate('/consolidated')}
             className="text-left bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-md hover:border-green-300 transition"
           >
             <div className="w-11 h-11 rounded-xl bg-green-100 text-green-700 grid place-items-center text-xl mb-3">
@@ -121,7 +119,7 @@ export default function Dashboard() {
             </div>
           </button>
           <button
-            onClick={() => navigate("/esg-report")}
+            onClick={() => navigate('/esg-report')}
             className="text-left bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-md hover:border-green-300 transition"
           >
             <div className="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-700 grid place-items-center text-xl mb-3">
@@ -133,7 +131,7 @@ export default function Dashboard() {
             </div>
           </button>
           <button
-            onClick={() => navigate("/sdg-report")}
+            onClick={() => navigate('/sdg-report')}
             className="text-left bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-md hover:border-green-300 transition"
           >
             <div className="w-11 h-11 rounded-xl bg-sky-100 text-sky-700 grid place-items-center text-xl mb-3">
@@ -156,7 +154,7 @@ export default function Dashboard() {
               </p>
             </div>
             <button
-              onClick={() => navigate("/consolidated")}
+              onClick={() => navigate('/consolidated')}
               className="text-[12.5px] font-semibold text-green-700 hover:text-green-800"
             >
               See all →
@@ -200,10 +198,7 @@ export default function Dashboard() {
                 <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mb-3">
                   <div
                     className="h-full rounded-full"
-                    style={{
-                      width: `${u.overall}%`,
-                      background: colorFor(u.overall),
-                    }}
+                    style={{ width: `${u.overall}%`, background: colorFor(u.overall) }}
                   />
                 </div>
 
@@ -217,7 +212,7 @@ export default function Dashboard() {
                   {u.improvements.length > 0 && (
                     <span className="text-amber-700 font-bold">
                       {u.improvements.length} action
-                      {u.improvements.length > 1 ? "s" : ""}
+                      {u.improvements.length > 1 ? 's' : ''}
                     </span>
                   )}
                 </div>
@@ -228,7 +223,6 @@ export default function Dashboard() {
 
         {/* Two-column: Improvements + Equity */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Group improvements */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6">
             <h3 className="text-[14px] font-bold mb-1">
               Action Points — Group Level
@@ -281,11 +275,8 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Equity share */}
           <div className="bg-white border border-slate-200 rounded-2xl p-6">
-            <h3 className="text-[14px] font-bold mb-1">
-              Equity Share Position
-            </h3>
+            <h3 className="text-[14px] font-bold mb-1">Equity Share Position</h3>
             <p className="text-[12px] text-slate-500 mb-4">
               MEIL Group's ownership in each reporting unit
             </p>
@@ -312,16 +303,16 @@ export default function Dashboard() {
                       </div>
                     </td>
                     <td className="py-2.5 pr-3 text-slate-500 text-[11.5px]">
-                      {u.type === "Business Unit" ? "BU" : "Subsidiary"}
+                      {u.type === 'Business Unit' ? 'BU' : 'Subsidiary'}
                     </td>
                     <td className="py-2.5 text-right">
                       <span
                         className={`font-mono font-extrabold ${
                           u.ownership_pct === 100
-                            ? "text-green-700"
+                            ? 'text-green-700'
                             : u.ownership_pct >= 60
-                              ? "text-blue-700"
-                              : "text-amber-700"
+                            ? 'text-blue-700'
+                            : 'text-amber-700'
                         }`}
                       >
                         {u.ownership_pct}%
@@ -334,18 +325,18 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   // ============================================================
   // DATA ENTRY OPERATOR VIEW
   // ============================================================
-  if (user.role === "data-entry") {
+  if (user.role === 'data-entry') {
     return (
       <div>
         <div className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Hi, {user.name.split(" ")[0]} 👋
+            Hi, {user.name.split(' ')[0]} 👋
           </h1>
           <p className="text-sm text-slate-500 mt-1">
             Let's fill in your BRSR data for <b>{user.entity}</b> · FY 2025-26
@@ -365,7 +356,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <button
-                  onClick={() => navigate("/collection")}
+                  onClick={() => navigate('/collection')}
                   className="px-5 py-3 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-bold text-sm hover:shadow-lg transition"
                 >
                   📝 Continue Data Entry →
@@ -386,10 +377,7 @@ export default function Dashboard() {
                   Sections Complete
                 </div>
                 <div className="text-3xl font-extrabold text-green-700 mt-1">
-                  {
-                    stats.sectionProgress.filter((s) => s.progress === 100)
-                      .length
-                  }
+                  {stats.sectionProgress.filter((s) => s.progress === 100).length}
                   <span className="text-lg text-green-600/60">
                     /{stats.sectionProgress.length}
                   </span>
@@ -417,21 +405,21 @@ export default function Dashboard() {
               <h3 className="text-[14px] font-bold mb-4">Section Progress</h3>
               <div className="grid gap-3">
                 {stats.sectionProgress.map((s) => {
-                  const complete = s.progress === 100;
+                  const complete = s.progress === 100
                   return (
                     <button
                       key={s.code}
-                      onClick={() => navigate("/collection")}
+                      onClick={() => navigate('/collection')}
                       className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-50 transition text-left border border-slate-100"
                     >
                       <div
                         className={`w-9 h-9 rounded-lg flex-shrink-0 grid place-items-center font-bold text-[13px] ${
                           complete
-                            ? "bg-green-100 text-green-700"
-                            : "bg-slate-100 text-slate-500"
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-slate-100 text-slate-500'
                         }`}
                       >
-                        {complete ? "✓" : s.progress + "%"}
+                        {complete ? '✓' : s.progress + '%'}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold text-[13.5px] text-slate-800">
@@ -443,25 +431,25 @@ export default function Dashboard() {
                       </div>
                       <div className="text-slate-300">›</div>
                     </button>
-                  );
+                  )
                 })}
               </div>
             </div>
           </>
         )}
       </div>
-    );
+    )
   }
 
   // ============================================================
   // ENTITY APPROVER VIEW
   // ============================================================
-  if (user.role === "approver") {
+  if (user.role === 'approver') {
     return (
       <div>
         <div className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Hi, {user.name.split(" ")[0]} 👋
+            Hi, {user.name.split(' ')[0]} 👋
           </h1>
           <p className="text-sm text-slate-500 mt-1">
             Review submissions from <b>{user.entity}</b> · FY 2025-26
@@ -473,8 +461,8 @@ export default function Dashboard() {
             <div
               className={`rounded-2xl p-6 mb-5 border-2 ${
                 stats.pendingApprovals > 0
-                  ? "bg-gradient-to-br from-amber-50 to-orange-50 border-amber-300"
-                  : "bg-gradient-to-br from-green-50 to-emerald-50 border-green-300"
+                  ? 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-300'
+                  : 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300'
               }`}
             >
               <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -482,38 +470,36 @@ export default function Dashboard() {
                   <div
                     className={`w-16 h-16 rounded-2xl grid place-items-center text-3xl font-extrabold ${
                       stats.pendingApprovals > 0
-                        ? "bg-amber-500 text-white"
-                        : "bg-green-500 text-white"
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-green-500 text-white'
                     }`}
                   >
-                    {stats.pendingApprovals > 0 ? stats.pendingApprovals : "✓"}
+                    {stats.pendingApprovals > 0 ? stats.pendingApprovals : '✓'}
                   </div>
                   <div>
                     <div className="text-xl font-extrabold text-slate-900">
                       {stats.pendingApprovals > 0
                         ? `${stats.pendingApprovals} submission${
-                            stats.pendingApprovals > 1 ? "s" : ""
+                            stats.pendingApprovals > 1 ? 's' : ''
                           } waiting for you`
                         : "You're all caught up!"}
                     </div>
                     <div className="text-[13px] text-slate-600 mt-1">
                       {stats.pendingApprovals > 0
-                        ? "Review the data, then approve, reject, or request changes"
-                        : "No pending submissions in your scope right now"}
+                        ? 'Review the data, then approve, reject, or request changes'
+                        : 'No pending submissions in your scope right now'}
                     </div>
                   </div>
                 </div>
                 <button
-                  onClick={() => navigate("/approvals")}
+                  onClick={() => navigate('/approvals')}
                   className={`px-6 py-3 rounded-xl font-bold text-sm shadow-sm transition ${
                     stats.pendingApprovals > 0
-                      ? "bg-amber-500 hover:bg-amber-600 text-white"
-                      : "bg-green-500 hover:bg-green-600 text-white"
+                      ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                      : 'bg-green-500 hover:bg-green-600 text-white'
                   }`}
                 >
-                  {stats.pendingApprovals > 0
-                    ? "🖊️ Review Now →"
-                    : "Open Approvals"}
+                  {stats.pendingApprovals > 0 ? '🖊️ Review Now →' : 'Open Approvals'}
                 </button>
               </div>
             </div>
@@ -526,9 +512,7 @@ export default function Dashboard() {
                 <div className="text-3xl font-extrabold text-amber-600 mt-1">
                   {stats.pendingApprovals}
                 </div>
-                <div className="text-[11px] text-slate-500 mt-0.5">
-                  in your scope
-                </div>
+                <div className="text-[11px] text-slate-500 mt-0.5">in your scope</div>
               </div>
               <div className="bg-white border border-slate-200 rounded-xl p-5">
                 <div className="text-[10.5px] uppercase tracking-wider font-extrabold text-slate-500">
@@ -548,83 +532,74 @@ export default function Dashboard() {
                 <div className="text-3xl font-extrabold text-green-600 mt-1">
                   {stats.overallProgress}%
                 </div>
-                <div className="text-[11px] text-slate-500 mt-0.5">
-                  unit completion
-                </div>
+                <div className="text-[11px] text-slate-500 mt-0.5">unit completion</div>
               </div>
             </div>
           </>
         )}
       </div>
-    );
+    )
   }
 
   // ============================================================
   // DEFAULT VIEW (unit-admin, esg-officer)
   // ============================================================
   if (!stats) {
-    return (
-      <div className="text-center py-20 text-slate-500">Loading dashboard…</div>
-    );
+    return <div className="text-center py-20 text-slate-500">Loading dashboard…</div>
   }
 
   const kpis = [
     {
-      label: "Overall Completion",
+      label: 'Overall Completion',
       value: `${stats.overallProgress}%`,
-      color: "#10B981",
+      color: '#10B981',
       bar: stats.overallProgress,
     },
     {
-      label: "Pending Approvals",
+      label: 'Pending Approvals',
       value: stats.pendingApprovals,
-      color: "#F59E0B",
+      color: '#F59E0B',
       bar: Math.min(stats.pendingApprovals * 8, 100),
     },
     {
-      label: "Sections Complete",
-      value: `${stats.sectionProgress.filter((s) => s.progress === 100).length}/${stats.sectionProgress.length}`,
-      color: "#3B82F6",
+      label: 'Sections Complete',
+      value: `${stats.sectionProgress.filter((s) => s.progress === 100).length}/${
+        stats.sectionProgress.length
+      }`,
+      color: '#3B82F6',
       bar:
         (stats.sectionProgress.filter((s) => s.progress === 100).length /
           Math.max(stats.sectionProgress.length, 1)) *
         100,
     },
     {
-      label: "Avg Section Progress",
+      label: 'Avg Section Progress',
       value: `${Math.round(
         stats.sectionProgress.reduce((a, b) => a + b.progress, 0) /
           Math.max(stats.sectionProgress.length, 1),
       )}%`,
-      color: "#8B5CF6",
+      color: '#8B5CF6',
       bar:
         stats.sectionProgress.reduce((a, b) => a + b.progress, 0) /
         Math.max(stats.sectionProgress.length, 1),
     },
-  ];
+  ]
 
   return (
     <div>
       <div className="flex items-start gap-4 mb-4 flex-wrap">
         <div>
-          <h1 className="text-xl font-bold tracking-tight">
-            Welcome, {user.name}
-          </h1>
+          <h1 className="text-xl font-bold tracking-tight">Welcome, {user.name}</h1>
           <p className="text-[12.6px] text-slate-500 mt-0.5">
-            <span className="font-mono font-extrabold text-green-700">
-              {user.code}
-            </span>{" "}
-            · {user.role === "esg-officer" ? "All units" : user.entity}
+            <span className="font-mono font-extrabold text-green-700">{user.code}</span>{' '}
+            · {user.role === 'esg-officer' ? 'All units' : user.entity}
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-6">
         {kpis.map((k) => (
-          <div
-            key={k.label}
-            className="bg-white border border-slate-200 rounded-xl p-5"
-          >
+          <div key={k.label} className="bg-white border border-slate-200 rounded-xl p-5">
             <div className="text-[10.5px] uppercase tracking-wider text-slate-500 font-extrabold">
               {k.label}
             </div>
@@ -644,10 +619,11 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {/* AI Copilot for unit-admin and esg-officer */}
+      <AIGapAnalysis />
+
       <div className="bg-white border border-slate-200 rounded-xl p-6">
-        <h3 className="text-[13.5px] font-bold mb-4">
-          Completion by BRSR Section
-        </h3>
+        <h3 className="text-[13.5px] font-bold mb-4">Completion by BRSR Section</h3>
         {stats.sectionProgress.map((s) => (
           <div key={s.code} className="flex items-center gap-2.5 py-1.5">
             <div className="w-[200px] flex-shrink-0 text-[12.6px] text-slate-700 font-medium truncate">
@@ -669,5 +645,5 @@ export default function Dashboard() {
         ))}
       </div>
     </div>
-  );
+  )
 }
