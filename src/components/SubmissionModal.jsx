@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../lib/api";
 import CommentThread from "./CommentThread";
+import TrustBadge from "./TrustBadge";
 
 function FieldCard({ f }) {
   return (
@@ -133,6 +134,10 @@ export default function SubmissionModal({ submission, onClose, onAction }) {
               <span className="font-mono text-[10.5px] lg:text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-bold">
                 {submission.id}
               </span>
+              <span className="font-mono text-[10.5px] lg:text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-bold">
+                {submission.id}
+              </span>
+              <TrustBadge submissionId={submission.id} />
               <span
                 className={`inline-block px-2 lg:px-2.5 py-0.5 rounded-full text-[10.5px] lg:text-[10.8px] font-bold ${
                   submission.state === "Approved"
