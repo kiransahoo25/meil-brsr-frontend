@@ -5,7 +5,6 @@ import { useIdleTimer } from '../hooks/useIdleTimer'
 import IdleWarningModal from '../components/IdleWarningModal'
 import ChatBot from '../components/ChatBot'
 import ScreenshotGuard from '../components/ScreenshotGuard'
-import Watermark from '../components/Watermark'
 
 const ROLE_NAV = {
   'data-entry': ['/', '/collection'],
@@ -225,7 +224,6 @@ export default function AppShell() {
         )}
 
         <ChatBot />
-        <Watermark />
       </div>
     </ScreenshotGuard>
   )
