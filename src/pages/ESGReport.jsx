@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import api from '../lib/api'
-import { useAuth } from '../context/AuthContext'
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import api from "../lib/api";
+import { useAuth } from "../context/AuthContext";
 import {
   RadialBarChart,
   RadialBar,
@@ -17,43 +17,43 @@ import {
   Pie,
   Legend,
   PolarAngleAxis,
-} from 'recharts'
+} from "recharts";
 
 const PILLARS = {
   E: {
-    label: 'Environmental',
-    color: '#10B981',
-    icon: '🌱',
-    sections: ['C6', 'CORE'],
-    desc: 'Emissions, energy, water, waste, circularity',
+    label: "Environmental",
+    color: "#10B981",
+    icon: "🌱",
+    sections: ["C2", "C6", "CORE"],
+    desc: "Sustainable products, emissions, energy, water, waste",
   },
   S: {
-    label: 'Social',
-    color: '#3B82F6',
-    icon: '👥',
-    sections: ['C3', 'C8'],
-    desc: 'Employees, safety, community, inclusion',
+    label: "Social",
+    color: "#3B82F6",
+    icon: "👥",
+    sections: ["C3", "C5", "C8", "C9"],
+    desc: "Employees, safety, human rights, community, customers",
   },
   G: {
-    label: 'Governance',
-    color: '#8B5CF6',
-    icon: '⚖️',
-    sections: ['A', 'B', 'C1'],
-    desc: 'Ethics, board, transparency, compliance',
+    label: "Governance",
+    color: "#8B5CF6",
+    icon: "⚖️",
+    sections: ["A", "B", "C1", "C4", "C7"],
+    desc: "Ethics, board, stakeholders, public policy",
   },
-}
+};
 
 function colorFor(p) {
-  if (p >= 85) return '#10B981'
-  if (p >= 65) return '#3B82F6'
-  if (p >= 45) return '#F59E0B'
-  return '#EF4444'
+  if (p >= 85) return "#10B981";
+  if (p >= 65) return "#3B82F6";
+  if (p >= 45) return "#F59E0B";
+  return "#EF4444";
 }
 
 // Custom tooltip for the radial chart
 function PillarTooltip({ active, payload }) {
-  if (!active || !payload?.length) return null
-  const d = payload[0].payload
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
   return (
     <div className="bg-white border border-slate-200 rounded-lg shadow-lg px-3 py-2 text-[12px]">
       <div className="font-bold text-slate-800">{d.name}</div>
@@ -61,88 +61,94 @@ function PillarTooltip({ active, payload }) {
         {d.value}%
       </div>
     </div>
-  )
+  );
 }
 
 function SectionTooltip({ active, payload }) {
-  if (!active || !payload?.length) return null
-  const d = payload[0].payload
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
   return (
     <div className="bg-white border border-slate-200 rounded-lg shadow-lg px-3 py-2 text-[12px] max-w-[240px]">
       <div className="font-bold text-slate-800">{d.fullName}</div>
       <div className="text-slate-500 text-[11px] mt-0.5">{d.sub}</div>
-      <div className="font-mono font-bold text-slate-700 mt-1">{d.progress}%</div>
+      <div className="font-mono font-bold text-slate-700 mt-1">
+        {d.progress}%
+      </div>
     </div>
-  )
+  );
 }
 
 export default function ESGReport() {
-  const { user } = useAuth()
-  const [searchParams, setSearchParams] = useSearchParams()
-  const [stats, setStats] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [downloading, setDownloading] = useState(false)
-  const [units, setUnits] = useState([])
+  const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
+  const [units, setUnits] = useState([]);
 
-  const isGroupLevel = user.role === 'esg-officer' || user.role === 'group-admin'
-  const selectedUnit = searchParams.get('unit') || ''
+  const isGroupLevel =
+    user.role === "esg-officer" || user.role === "group-admin";
+  const selectedUnit = searchParams.get("unit") || "";
 
   useEffect(() => {
     if (isGroupLevel) {
-      api.get('/entities').then(({ data }) => {
+      api.get("/entities").then(({ data }) => {
         const unitsList = data.filter(
-          (e) => e.type === 'Business Unit' || e.type === 'Subsidiary',
-        )
-        setUnits(unitsList)
-      })
+          (e) => e.type === "Business Unit" || e.type === "Subsidiary",
+        );
+        setUnits(unitsList);
+      });
     }
-  }, [isGroupLevel])
+  }, [isGroupLevel]);
 
   useEffect(() => {
-    setLoading(true)
+    setLoading(true);
     const url = selectedUnit
       ? `/dashboard/stats?entity_slug=${selectedUnit}`
-      : '/dashboard/stats'
+      : "/dashboard/stats";
     api
       .get(url)
       .then(({ data }) => {
-        setStats(data)
-        setLoading(false)
+        setStats(data);
+        setLoading(false);
       })
-      .catch(() => setLoading(false))
-  }, [selectedUnit])
+      .catch(() => setLoading(false));
+  }, [selectedUnit]);
 
   async function downloadPDF() {
-    setDownloading(true)
+    setDownloading(true);
     try {
-      const token = localStorage.getItem('token')
-      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
+      const token = localStorage.getItem("token");
+      const apiBase =
+        import.meta.env.VITE_API_URL || "http://localhost:8000/api";
       const url = selectedUnit
         ? `${apiBase}/reports/brsr-pdf?entity_slug=${selectedUnit}`
-        : `${apiBase}/reports/brsr-pdf`
+        : `${apiBase}/reports/brsr-pdf`;
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!res.ok) throw new Error('Failed to generate PDF')
-      const blob = await res.blob()
-      const link = document.createElement('a')
-      link.href = URL.createObjectURL(blob)
-      link.download = 'MEIL_BRSR_Report_FY2526.pdf'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(link.href)
+      });
+      if (!res.ok) throw new Error("Failed to generate PDF");
+      const blob = await res.blob();
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "MEIL_BRSR_Report_FY2526.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
     } catch (err) {
-      alert('PDF generation failed: ' + err.message)
+      alert("PDF generation failed: " + err.message);
     } finally {
-      setDownloading(false)
+      setDownloading(false);
     }
   }
 
   if (loading) {
     return (
-      <div className="text-center py-20 text-slate-500">Loading ESG report…</div>
-    )
+      <div className="text-center py-20 text-slate-500">
+        Loading ESG report…
+      </div>
+    );
   }
 
   if (!stats) {
@@ -150,38 +156,38 @@ export default function ESGReport() {
       <div className="text-center py-20 text-slate-500">
         Could not load ESG data.
       </div>
-    )
+    );
   }
 
   const sectionMap = Object.fromEntries(
     stats.sectionProgress.map((s) => [s.code, s.progress]),
-  )
+  );
 
-  const pillarScores = {}
+  const pillarScores = {};
   for (const [key, pillar] of Object.entries(PILLARS)) {
-    const relevant = pillar.sections.map((c) => sectionMap[c] || 0)
+    const relevant = pillar.sections.map((c) => sectionMap[c] || 0);
     const avg = relevant.length
       ? Math.round(relevant.reduce((a, b) => a + b, 0) / relevant.length)
-      : 0
-    pillarScores[key] = avg
+      : 0;
+    pillarScores[key] = avg;
   }
 
   const overallESG = Math.round(
     (pillarScores.E + pillarScores.S + pillarScores.G) / 3,
-  )
+  );
 
   function sectionsFor(pillarKey) {
     return PILLARS[pillarKey].sections
       .map((code) => stats.sectionProgress.find((s) => s.code === code))
-      .filter(Boolean)
+      .filter(Boolean);
   }
 
   // ---- Chart data ----
   const radialData = [
-    { name: 'Governance', value: pillarScores.G, fill: PILLARS.G.color },
-    { name: 'Social', value: pillarScores.S, fill: PILLARS.S.color },
-    { name: 'Environmental', value: pillarScores.E, fill: PILLARS.E.color },
-  ]
+    { name: "Governance", value: pillarScores.G, fill: PILLARS.G.color },
+    { name: "Social", value: pillarScores.S, fill: PILLARS.S.color },
+    { name: "Environmental", value: pillarScores.E, fill: PILLARS.E.color },
+  ];
 
   const sectionBarData = stats.sectionProgress.map((s) => ({
     code: s.code,
@@ -190,12 +196,12 @@ export default function ESGReport() {
     sub: s.sub,
     progress: s.progress,
     fill: colorFor(s.progress),
-  }))
+  }));
 
   const donutData = [
-    { name: 'Completed', value: overallESG, color: '#10B981' },
-    { name: 'Remaining', value: 100 - overallESG, color: '#e2e8f0' },
-  ]
+    { name: "Completed", value: overallESG, color: "#10B981" },
+    { name: "Remaining", value: 100 - overallESG, color: "#e2e8f0" },
+  ];
 
   return (
     <div>
@@ -209,8 +215,8 @@ export default function ESGReport() {
             {selectedUnit
               ? units.find((u) => u.slug === selectedUnit)?.name
               : isGroupLevel
-              ? 'MEIL Group (All Units)'
-              : user.entity}{' '}
+                ? "MEIL Group (All Units)"
+                : user.entity}{" "}
             · FY 2025-26 · Environmental, Social &amp; Governance performance
           </p>
         </div>
@@ -223,9 +229,9 @@ export default function ESGReport() {
             <select
               value={selectedUnit}
               onChange={(e) => {
-                const v = e.target.value
-                if (v) setSearchParams({ unit: v })
-                else setSearchParams({})
+                const v = e.target.value;
+                if (v) setSearchParams({ unit: v });
+                else setSearchParams({});
               }}
               className="px-3 py-2 border-2 border-slate-200 rounded-xl bg-white text-[13px] font-semibold focus:border-green-500 outline-none min-w-[200px]"
             >
@@ -244,7 +250,7 @@ export default function ESGReport() {
           disabled={downloading}
           className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold text-[12.8px] hover:shadow-lg transition disabled:opacity-60"
         >
-          {downloading ? '⏳ Generating…' : '⬇ Download BRSR PDF'}
+          {downloading ? "⏳ Generating…" : "⬇ Download BRSR PDF"}
         </button>
       </div>
 
@@ -256,7 +262,7 @@ export default function ESGReport() {
             Overall ESG Score
           </div>
           <div className="flex items-center justify-center my-4">
-            <div style={{ width: 180, height: 180, position: 'relative' }}>
+            <div style={{ width: 180, height: 180, position: "relative" }}>
               <ResponsiveContainer>
                 <PieChart>
                   <Pie
@@ -300,7 +306,7 @@ export default function ESGReport() {
           <p className="text-[12px] text-slate-500 mb-2">
             How each pillar performs relative to a 100% target
           </p>
-          <div style={{ width: '100%', height: 280 }}>
+          <div style={{ width: "100%", height: 280 }}>
             <ResponsiveContainer>
               <RadialBarChart
                 data={radialData}
@@ -317,7 +323,7 @@ export default function ESGReport() {
                   tick={false}
                 />
                 <RadialBar
-                  background={{ fill: '#f1f5f9' }}
+                  background={{ fill: "#f1f5f9" }}
                   dataKey="value"
                   cornerRadius={10}
                 >
@@ -331,10 +337,10 @@ export default function ESGReport() {
                   layout="vertical"
                   verticalAlign="middle"
                   align="right"
-                  wrapperStyle={{ fontSize: 12, color: '#475569' }}
+                  wrapperStyle={{ fontSize: 12, color: "#475569" }}
                   formatter={(value, entry) => {
-                    const v = entry.payload.value
-                    return `${value} · ${v}%`
+                    const v = entry.payload.value;
+                    return `${value} · ${v}%`;
                   }}
                 />
               </RadialBarChart>
@@ -351,18 +357,27 @@ export default function ESGReport() {
         <p className="text-[12px] text-slate-500 mb-4">
           Progress across every BRSR section — colored by status
         </p>
-        <div style={{ width: '100%', height: Math.max(280, sectionBarData.length * 42) }}>
+        <div
+          style={{
+            width: "100%",
+            height: Math.max(280, sectionBarData.length * 42),
+          }}
+        >
           <ResponsiveContainer>
             <BarChart
               data={sectionBarData}
               layout="vertical"
               margin={{ top: 5, right: 40, left: 10, bottom: 5 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="#e2e8f0"
+                horizontal={false}
+              />
               <XAxis
                 type="number"
                 domain={[0, 100]}
-                tick={{ fill: '#94a3b8', fontSize: 10 }}
+                tick={{ fill: "#94a3b8", fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
                 tickFormatter={(v) => `${v}%`}
@@ -370,14 +385,14 @@ export default function ESGReport() {
               <YAxis
                 type="category"
                 dataKey="name"
-                tick={{ fill: '#475569', fontSize: 11, fontWeight: 700 }}
+                tick={{ fill: "#475569", fontSize: 11, fontWeight: 700 }}
                 axisLine={false}
                 tickLine={false}
                 width={110}
               />
               <Tooltip
                 content={<SectionTooltip />}
-                cursor={{ fill: 'rgba(0,0,0,0.03)' }}
+                cursor={{ fill: "rgba(0,0,0,0.03)" }}
               />
               <Bar dataKey="progress" radius={[0, 6, 6, 0]} barSize={18}>
                 {sectionBarData.map((entry, i) => (
@@ -391,8 +406,8 @@ export default function ESGReport() {
 
       {/* ============ PILLAR BREAKDOWN CARDS ============ */}
       {Object.entries(PILLARS).map(([key, pillar]) => {
-        const sections = sectionsFor(key)
-        if (sections.length === 0) return null
+        const sections = sectionsFor(key);
+        if (sections.length === 0) return null;
         return (
           <div
             key={key}
@@ -401,7 +416,7 @@ export default function ESGReport() {
             <div className="flex items-center gap-4 mb-4 pb-4 border-b border-slate-100">
               <div
                 className="w-12 h-12 rounded-xl grid place-items-center text-2xl"
-                style={{ background: pillar.color + '20', color: pillar.color }}
+                style={{ background: pillar.color + "20", color: pillar.color }}
               >
                 {pillar.icon}
               </div>
@@ -409,7 +424,9 @@ export default function ESGReport() {
                 <h3 className="text-[16px] font-extrabold text-slate-900">
                   {pillar.label}
                 </h3>
-                <p className="text-[12px] text-slate-500 mt-0.5">{pillar.desc}</p>
+                <p className="text-[12px] text-slate-500 mt-0.5">
+                  {pillar.desc}
+                </p>
               </div>
               <div className="text-right">
                 <div
@@ -449,7 +466,7 @@ export default function ESGReport() {
               ))}
             </div>
           </div>
-        )
+        );
       })}
 
       {/* ============ KEY INDICATORS TABLE ============ */}
@@ -518,7 +535,9 @@ export default function ESGReport() {
                     S
                   </span>
                 </td>
-                <td className="py-2.5 pr-3 font-semibold">Health insurance coverage</td>
+                <td className="py-2.5 pr-3 font-semibold">
+                  Health insurance coverage
+                </td>
                 <td className="py-2.5 pr-3 font-mono">100</td>
                 <td className="py-2.5 pr-3 text-slate-500">%</td>
                 <td className="py-2.5">
@@ -565,9 +584,9 @@ export default function ESGReport() {
       </div>
 
       <div className="mt-4 bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-xl text-[12.4px]">
-        ℹ️ ESG scores are computed from BRSR field completion in the relevant NGRBC
-        principles. Complete all fields in each principle to reach 100%.
+        ℹ️ ESG scores are computed from BRSR field completion in the relevant
+        NGRBC principles. Complete all fields in each principle to reach 100%.
       </div>
     </div>
-  )
+  );
 }
