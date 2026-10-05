@@ -2,50 +2,26 @@ import { useEffect, useState } from 'react'
 import api from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import EvidenceUploader from '../components/EvidenceUploader'
+import CarbonCalculator from '../components/CarbonCalculator'
 
-// Fields that require evidence attachment
 const EVIDENCE_REQUIRED = new Set([
-  'P6-E1',
-  'P6-E3a',
-  'P6-E3b',
-  'P6-E3c',
-  'P6-E2',
-  'P3-E5',
-  'P8-E2',
-  'Core-1',
+  'P6-E1', 'P6-E3a', 'P6-E3b', 'P6-E3c', 'P6-E2', 'P3-E5', 'P8-E2', 'Core-1',
 ])
 
-// Client-side anomaly detection
+// Fields that get the carbon calculator widget
+const CARBON_CALC_FIELDS = new Set(['P6-E1', 'P6-E3a', 'P6-E3b', 'P6-E3c'])
+
 function detectAnomaly(field, value) {
   if (!value || value === '') return null
   const num = parseFloat(value)
   if (isNaN(num)) return null
-
-  if (field.unit === '%' && (num < 0 || num > 100)) {
-    return 'Percentage must be between 0 and 100'
-  }
-
-  if (['tCO2e', 'GJ', 'KL'].includes(field.unit) && num < 0) {
-    return `${field.unit} value cannot be negative`
-  }
-
-  if (field.code === 'P3-E5' && num > 20) {
-    return 'Fatalities count seems unusually high — please verify'
-  }
-  if (field.code === 'P6-E1' && num > 10000000) {
-    return 'Value seems unusually large — verify units (GJ vs kWh?)'
-  }
-  if (field.code === 'P6-E2' && num > 1000000) {
-    return 'Water withdrawal seems unusually large — verify units'
-  }
-  if (field.code === 'P8-E2' && num > 1000) {
-    return 'CSR expenditure seems unusually large — verify units (Rs crore)'
-  }
-
-  if (num > 500000000) {
-    return 'Value seems unusually large — please verify'
-  }
-
+  if (field.unit === '%' && (num < 0 || num > 100)) return 'Percentage must be between 0 and 100'
+  if (['tCO2e', 'GJ', 'KL'].includes(field.unit) && num < 0) return `${field.unit} value cannot be negative`
+  if (field.code === 'P3-E5' && num > 20) return 'Fatalities count seems unusually high — please verify'
+  if (field.code === 'P6-E1' && num > 10000000) return 'Value seems unusually large — verify units (GJ vs kWh?)'
+  if (field.code === 'P6-E2' && num > 1000000) return 'Water withdrawal seems unusually large — verify units'
+  if (field.code === 'P8-E2' && num > 1000) return 'CSR expenditure seems unusually large — verify units (Rs crore)'
+  if (num > 500000000) return 'Value seems unusually large — please verify'
   return null
 }
 
@@ -58,6 +34,7 @@ export default function Collection() {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
   const [msgType, setMsgType] = useState('info')
+  const [calcOpen, setCalcOpen] = useState(null)
 
   useEffect(() => {
     api
@@ -230,17 +207,13 @@ export default function Collection() {
                     {current.sub} · Owner: <b>{current.owner}</b>
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <div className="text-2xl font-extrabold text-slate-900">
-                      {loadedComplete}
-                      <span className="text-slate-400 text-base">
-                        /{fields.length}
-                      </span>
-                    </div>
-                    <div className="text-[10.5px] uppercase tracking-wider font-bold text-slate-500">
-                      filled
-                    </div>
+                <div className="text-right">
+                  <div className="text-2xl font-extrabold text-slate-900">
+                    {loadedComplete}
+                    <span className="text-slate-400 text-base">/{fields.length}</span>
+                  </div>
+                  <div className="text-[10.5px] uppercase tracking-wider font-bold text-slate-500">
+                    filled
                   </div>
                 </div>
               </div>
@@ -273,6 +246,8 @@ export default function Collection() {
               const missingRequired = f.required && !f.value
               const anomaly = detectAnomaly(f, f.value)
               const needsEvidence = EVIDENCE_REQUIRED.has(f.code)
+              const showCalculator = CARBON_CALC_FIELDS.has(f.code)
+              const calcIsOpen = calcOpen === f.id
 
               return (
                 <div
@@ -299,6 +274,11 @@ export default function Collection() {
                         {needsEvidence && (
                           <span className="text-[10px] font-extrabold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
                             📎 EVIDENCE NEEDED
+                          </span>
+                        )}
+                        {showCalculator && (
+                          <span className="text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                            🧮 CALCULATOR
                           </span>
                         )}
                       </div>
@@ -355,7 +335,32 @@ export default function Collection() {
                     </div>
                   )}
 
-                  {/* ✨ Evidence Uploader for required fields */}
+                  {showCalculator && (
+                    <div className="mt-3 flex items-center gap-3 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setCalcOpen(calcIsOpen ? null : f.id)}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 border-2 border-emerald-200 text-emerald-700 font-bold text-[12.5px] hover:bg-emerald-100 transition"
+                      >
+                        🧮 {calcIsOpen ? 'Close Calculator' : 'Open Carbon Calculator'}
+                      </button>
+                      <span className="text-[11.5px] text-slate-500">
+                        Convert kWh or fuel into tCO₂e using Indian factors
+                      </span>
+                    </div>
+                  )}
+
+                  {calcIsOpen && (
+                    <div className="mt-3">
+                      <CarbonCalculator
+                        onInsert={(value) => {
+                          updateField(f.id, String(value))
+                          setCalcOpen(null)
+                        }}
+                      />
+                    </div>
+                  )}
+
                   {needsEvidence && (
                     <EvidenceUploader
                       fieldId={f.id}
