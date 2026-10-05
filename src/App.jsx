@@ -1,20 +1,21 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { AuthProvider, useAuth } from './context/AuthContext'
-import { Suspense, lazy } from 'react'
-import AppShell from './layouts/AppShell'
-import RoleGuard from './components/RoleGuard'
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import { Suspense, lazy } from "react";
+import AppShell from "./layouts/AppShell";
+import RoleGuard from "./components/RoleGuard";
 
 // Lazy-load all pages — they only download when first visited
-const LoginPage = lazy(() => import('./pages/LoginPage'))
-const Dashboard = lazy(() => import('./pages/Dashboard'))
-const Collection = lazy(() => import('./pages/Collection'))
-const Approvals = lazy(() => import('./pages/Approvals'))
-const ESGReport = lazy(() => import('./pages/ESGReport'))
-const SDGReport = lazy(() => import('./pages/SDGReport'))
-const ConsolidatedReport = lazy(() => import('./pages/ConsolidatedReport'))
-const Validation = lazy(() => import('./pages/Validation'))
-const Audit = lazy(() => import('./pages/Audit'))
-const Placeholder = lazy(() => import('./pages/Placeholder'))
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Collection = lazy(() => import("./pages/Collection"));
+const Approvals = lazy(() => import("./pages/Approvals"));
+const ESGReport = lazy(() => import("./pages/ESGReport"));
+const SDGReport = lazy(() => import("./pages/SDGReport"));
+const ConsolidatedReport = lazy(() => import("./pages/ConsolidatedReport"));
+const Validation = lazy(() => import("./pages/Validation"));
+const Audit = lazy(() => import("./pages/Audit"));
+const LoginHistory = lazy(() => import("./pages/LoginHistory"));
+const Placeholder = lazy(() => import("./pages/Placeholder"));
 
 function PageLoader() {
   return (
@@ -24,21 +25,21 @@ function PageLoader() {
         <div className="text-[13px] text-slate-500 font-medium">Loading…</div>
       </div>
     </div>
-  )
+  );
 }
 
 function Protected({ children }) {
-  const { user, loading } = useAuth()
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
       <div className="min-h-screen grid place-items-center text-slate-500">
         Loading…
       </div>
-    )
+    );
   }
-  if (!user) return <Navigate to="/login" replace />
-  return children
+  if (!user) return <Navigate to="/login" replace />;
+  return children;
 }
 
 export default function App() {
@@ -113,10 +114,18 @@ export default function App() {
                   </RoleGuard>
                 }
               />
+              <Route
+                path="login-history"
+                element={
+                  <RoleGuard path="/login-history">
+                    <LoginHistory />
+                  </RoleGuard>
+                }
+              />
             </Route>
           </Routes>
         </Suspense>
       </BrowserRouter>
     </AuthProvider>
-  )
+  );
 }
