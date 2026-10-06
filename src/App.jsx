@@ -15,6 +15,7 @@ const ConsolidatedReport = lazy(() => import("./pages/ConsolidatedReport"));
 const Validation = lazy(() => import("./pages/Validation"));
 const Audit = lazy(() => import("./pages/Audit"));
 const LoginHistory = lazy(() => import("./pages/LoginHistory"));
+const Archive = lazy(() => import("./pages/Archive"));
 const Placeholder = lazy(() => import("./pages/Placeholder"));
 
 function PageLoader() {
@@ -119,6 +120,14 @@ export default function App() {
                 element={
                   <RoleGuard path="/login-history">
                     <LoginHistory />
+                  </RoleGuard>
+                }
+              />
+              <Route
+                path="archive"
+                element={
+                  <RoleGuard path="/archive">
+                    <Archive />
                   </RoleGuard>
                 }
               />
