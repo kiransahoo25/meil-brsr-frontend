@@ -75,7 +75,7 @@ export default function Audit() {
   async function handleExport() {
     setExporting(true)
     try {
-      const token = localStorage.getItem('token')
+      const token = sessionStorage.getItem('token')
       const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
       const res = await fetch(`${apiBase}/audit/export`, {
         headers: { Authorization: `Bearer ${token}` },

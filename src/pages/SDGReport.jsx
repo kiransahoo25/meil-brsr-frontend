@@ -78,7 +78,7 @@ export default function SDGReport() {
   async function downloadPDF() {
     setDownloading(true)
     try {
-      const token = localStorage.getItem('token')
+      const token = sessionStorage.getItem('token')
       const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000/api'
       const url = selectedUnit
         ? `${apiBase}/reports/sdg-pdf?entity_slug=${selectedUnit}`
