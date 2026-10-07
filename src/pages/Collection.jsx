@@ -43,13 +43,12 @@ export default function Collection() {
   const [message, setMessage] = useState('')
   const [msgType, setMsgType] = useState('info')
   const [calcOpen, setCalcOpen] = useState(null)
-  const [missingSections, setMissingSections] = useState([])
+  const [missingModal, setMissingModal] = useState(null) // holds missing sections array
 
   useEffect(() => {
     api
       .get('/collection/sections')
       .then(({ data }) => {
-        // Sort sections into display order
         const sorted = [...data].sort((a, b) => {
           const ia = SECTION_ORDER.indexOf(a.code)
           const ib = SECTION_ORDER.indexOf(b.code)
@@ -92,34 +91,64 @@ export default function Collection() {
     }
   }
 
-  async function handleSubmitAll() {
-    if (!window.confirm('Submit all complete sections for review?')) return
+  async function submitAll(force = false) {
     setBusy(true)
-    setMissingSections([])
+    setMessage('')
     try {
-      const { data } = await api.post(`/collection/submit-all/${user.entity}`)
+      const { data } = await api.post(
+        `/collection/submit-all/${user.entity}`,
+        null,
+        { params: force ? { force: true } : {} },
+      )
 
-      let msg = `✓ Submitted ${data.submitted_count} section(s)`
-      if (data.submitted_sections.length > 0) {
-        msg += `: ${data.submitted_sections.join(', ')}`
-      }
-      setMessage(msg)
-      setMsgType(data.skipped_count > 0 ? 'warn' : 'success')
-
-      if (data.skipped_count > 0) {
-        setMissingSections(data.skipped_sections || [])
+      if (force) {
+        // Force submit — everything went through
+        setMessage(
+          `⚠️ Force-submitted ${data.submitted_count} section(s) with missing fields. Your approver will see what's incomplete.`,
+        )
+        setMsgType('warn')
+      } else {
+        // Normal submit
+        if (data.skipped_count > 0) {
+          // Show caution modal
+          setMissingModal(data.skipped_sections || [])
+          if (data.submitted_count > 0) {
+            setMessage(
+              `✓ Submitted ${data.submitted_count} complete section(s). ${data.skipped_count} section(s) still have missing fields.`,
+            )
+            setMsgType('warn')
+          } else {
+            setMessage('')
+          }
+        } else {
+          let msg = `✓ Submitted ${data.submitted_count} section(s)`
+          if (data.submitted_sections.length > 0) {
+            msg += `: ${data.submitted_sections.join(', ')}`
+          }
+          setMessage(msg)
+          setMsgType('success')
+        }
       }
     } catch (err) {
-      setMessage('Submit All failed: ' + err.message)
+      setMessage('Submit failed: ' + err.message)
       setMsgType('error')
     } finally {
       setBusy(false)
     }
   }
 
+  async function handleSubmitAll() {
+    await submitAll(false)
+  }
+
+  async function handleForceSubmit() {
+    setMissingModal(null)
+    await submitAll(true)
+  }
+
   function jumpToSection(sectionCode) {
     setActiveSection(sectionCode)
-    setMissingSections([])
+    setMissingModal(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -142,6 +171,10 @@ export default function Collection() {
       : msgType === 'warn'
       ? 'bg-amber-50 border-amber-200 text-amber-900'
       : 'bg-blue-50 border-blue-200 text-blue-800'
+
+  const totalMissing = missingModal
+    ? missingModal.reduce((sum, s) => sum + s.missing_fields.length, 0)
+    : 0
 
   return (
     <div>
@@ -170,84 +203,6 @@ export default function Collection() {
           className={`mb-5 border px-4 py-3 rounded-xl text-[12.6px] leading-relaxed ${msgClasses}`}
         >
           {message}
-        </div>
-      )}
-
-      {/* Missing fields panel */}
-      {missingSections.length > 0 && (
-        <div className="mb-5 bg-red-50 border-2 border-red-200 rounded-2xl p-5">
-          <div className="flex items-start gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-red-100 text-red-700 grid place-items-center text-xl flex-shrink-0">
-              ⚠️
-            </div>
-            <div className="flex-1">
-              <h3 className="text-[14px] font-extrabold text-red-900">
-                Cannot submit — {missingSections.length} section(s) incomplete
-              </h3>
-              <p className="text-[12px] text-red-700 mt-0.5">
-                Fill in the fields below, then click Submit again.
-              </p>
-            </div>
-            <button
-              onClick={() => setMissingSections([])}
-              className="text-red-400 hover:text-red-700 text-xl leading-none w-8 h-8 grid place-items-center rounded-lg hover:bg-red-100"
-              aria-label="Dismiss"
-            >
-              ×
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {missingSections.map((sec) => (
-              <div
-                key={sec.section_code}
-                className="bg-white border border-red-200 rounded-xl overflow-hidden"
-              >
-                {/* Section header — click to jump */}
-                <button
-                  onClick={() => jumpToSection(sec.section_code)}
-                  className="w-full flex items-center justify-between px-4 py-3 bg-red-50/60 hover:bg-red-100 transition text-left"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-[10.5px] bg-white border border-red-200 text-red-700 px-2 py-0.5 rounded font-bold">
-                      {sec.section_code}
-                    </span>
-                    <span className="text-[13px] font-bold text-red-900">
-                      {sec.section}
-                    </span>
-                  </div>
-                  <span className="text-[11.5px] font-bold text-red-700">
-                    {sec.missing_fields.length} missing →
-                  </span>
-                </button>
-
-                {/* Missing fields list */}
-                <div className="p-3 space-y-1.5">
-                  {sec.missing_fields.map((f) => (
-                    <button
-                      key={f.code}
-                      onClick={() => jumpToSection(sec.section_code)}
-                      className="w-full flex items-start gap-2.5 p-2 rounded-lg hover:bg-slate-50 transition text-left group"
-                    >
-                      <span className="font-mono text-[10.5px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold flex-shrink-0 mt-0.5">
-                        {f.code}
-                      </span>
-                      <span className="text-[12.5px] text-slate-700 leading-snug flex-1">
-                        {f.label}
-                      </span>
-                      <span className="text-slate-300 group-hover:text-green-600 text-sm font-bold transition flex-shrink-0">
-                        →
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4 pt-4 border-t border-red-200 text-[11.5px] text-red-700">
-            💡 Tip: Click any section name or field to jump straight to it.
-          </div>
         </div>
       )}
 
@@ -501,6 +456,115 @@ export default function Collection() {
           )}
         </div>
       </div>
+
+      {/* ============================================================ */}
+      {/* CAUTION MODAL — Missing fields warning                       */}
+      {/* ============================================================ */}
+      {missingModal && missingModal.length > 0 && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/60 flex items-end sm:items-center justify-center sm:p-4"
+          onClick={() => setMissingModal(null)}
+        >
+          <div
+            className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-2xl max-h-[92vh] flex flex-col shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="px-5 lg:px-6 py-4 border-b border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 flex items-start gap-3">
+              <div className="w-11 h-11 rounded-xl bg-amber-100 grid place-items-center text-2xl flex-shrink-0">
+                ⚠️
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-base lg:text-lg font-extrabold text-amber-900">
+                  Some sections are incomplete
+                </h2>
+                <p className="text-[12.5px] text-amber-800 mt-0.5 leading-relaxed">
+                  {missingModal.length} section{missingModal.length > 1 ? 's' : ''}{' '}
+                  with {totalMissing} missing field{totalMissing > 1 ? 's' : ''}.
+                  You can go back and fill them, or submit anyway.
+                </p>
+              </div>
+              <button
+                onClick={() => setMissingModal(null)}
+                className="text-amber-500 hover:text-amber-800 text-2xl leading-none w-8 h-8 grid place-items-center rounded-lg hover:bg-amber-100 flex-shrink-0"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Body — section list */}
+            <div className="flex-1 overflow-y-auto px-5 lg:px-6 py-4">
+              <div className="space-y-3">
+                {missingModal.map((sec) => (
+                  <div
+                    key={sec.section_code}
+                    className="border border-slate-200 rounded-xl overflow-hidden"
+                  >
+                    <button
+                      onClick={() => jumpToSection(sec.section_code)}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-amber-50 transition text-left"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-[10.5px] bg-white border border-slate-200 text-slate-600 px-2 py-0.5 rounded font-bold">
+                          {sec.section_code}
+                        </span>
+                        <span className="text-[13px] font-bold text-slate-800">
+                          {sec.section}
+                        </span>
+                      </div>
+                      <span className="text-[11.5px] font-bold text-amber-700 whitespace-nowrap">
+                        {sec.missing_fields.length} missing →
+                      </span>
+                    </button>
+
+                    <div className="p-2.5 space-y-1">
+                      {sec.missing_fields.map((f) => (
+                        <div
+                          key={f.code}
+                          className="flex items-start gap-2.5 px-2 py-1.5 text-[12px]"
+                        >
+                          <span className="font-mono text-[10.5px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold flex-shrink-0 mt-0.5">
+                            {f.code}
+                          </span>
+                          <span className="text-slate-700 leading-snug">
+                            {f.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-4 bg-blue-50 border border-blue-200 text-blue-800 rounded-xl p-3.5 text-[12.3px] leading-relaxed">
+                <strong>What happens if I submit anyway?</strong>
+                <br />
+                All sections will be sent to your Entity Approver for review — even
+                the incomplete ones. Your approver will see exactly which fields are
+                empty and can request changes if needed.
+              </div>
+            </div>
+
+            {/* Footer — actions */}
+            <div className="px-5 lg:px-6 py-4 border-t border-slate-200 flex flex-col sm:flex-row gap-2 sm:justify-end">
+              <button
+                onClick={() => setMissingModal(null)}
+                className="w-full sm:w-auto px-5 py-3 rounded-xl border-2 border-slate-200 text-slate-700 font-bold text-[13px] hover:bg-slate-50 transition"
+              >
+                ← Go Back and Fill
+              </button>
+              <button
+                onClick={handleForceSubmit}
+                disabled={busy}
+                className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-extrabold text-[13px] hover:shadow-lg transition disabled:opacity-60"
+              >
+                {busy ? 'Submitting…' : '⚠️ Submit Anyway'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
