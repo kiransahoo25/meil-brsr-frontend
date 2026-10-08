@@ -142,6 +142,33 @@ export default function ESGReport() {
       setDownloading(false);
     }
   }
+  async function downloadFullPDF() {
+    setDownloading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const apiBase =
+        import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+      const url = selectedUnit
+        ? `${apiBase}/reports/brsr-full?entity_slug=${selectedUnit}`
+        : `${apiBase}/reports/brsr-full`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to generate PDF");
+      const blob = await res.blob();
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "MEIL_BRSR_Full_Report_FY2526.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+    } catch (err) {
+      alert("Full BRSR PDF generation failed: " + err.message);
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -246,11 +273,11 @@ export default function ESGReport() {
         )}
 
         <button
-          onClick={downloadPDF}
+          onClick={downloadFullPDF}
           disabled={downloading}
-          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold text-[12.8px] hover:shadow-lg transition disabled:opacity-60"
+          className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold text-[12.8px] hover:shadow-lg transition disabled:opacity-60"
         >
-          {downloading ? "⏳ Generating…" : "⬇ Download BRSR PDF"}
+          {downloading ? "⏳ Generating…" : "📄 Download BRSR Report"}
         </button>
       </div>
 
