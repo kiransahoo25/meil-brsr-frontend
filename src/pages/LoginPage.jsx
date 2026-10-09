@@ -140,7 +140,7 @@ export default function LoginPage() {
           <code className="bg-white px-1.5 py-0.5 rounded font-mono font-bold">demo</code>.
           Try a demo user:
           <div className="flex flex-wrap gap-1.5 mt-2">
-            {['A1', 'A3', 'B3', 'C1', 'C8', 'D1', 'E1'].map((c) => (
+            {['A1', 'B1', 'C1', 'D1', 'E1'].map((c) => (
               <button
                 key={c}
                 type="button"
